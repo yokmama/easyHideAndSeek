@@ -1,0 +1,4 @@
+name: easy-hide-and-seek
+version: '1.0-SNAPSHOT'
+main: org.example.hello.easyHideAndSeek.Main
+api-version: '1.21'
