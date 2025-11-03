@@ -1,0 +1,4 @@
+# Arena Configuration
+# Arenas will be created via /hs admin commands
+
+arenas: {}

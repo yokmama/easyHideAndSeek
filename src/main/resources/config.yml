@@ -1,0 +1,26 @@
+# Hide and Seek Configuration
+
+general:
+  language: "ja_JP"
+  auto-start: true
+  min-players: 2
+  max-players: 30
+
+game:
+  preparation-time: 30      # Preparation time in seconds
+  seek-time: 600           # Seek time in seconds - default 10 minutes
+  seeker-ratio: 0.23       # Seeker ratio (23%)
+
+capture:
+  method: "ATTACK"         # Capture method
+  damage: false            # Whether to deal actual damage
+
+economy:
+  enabled: true
+  currency-symbol: "coins"
+
+  rewards:
+    hider-win: 1000
+    seeker-win: 1000
+    per-capture: 200
+    participation: 100
