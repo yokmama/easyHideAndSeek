@@ -1,0 +1,113 @@
+# Shop Configuration
+shop:
+  # Shop Item Configuration
+  shop-item:
+    material: EMERALD
+    display-name: "&a&lShop"
+    lore:
+      - "&7Click to browse items"
+    slot: 8
+    glow: true
+
+  # Shop GUI Configuration
+  shop-gui:
+    title: "&8Shop Menu"
+    size: 54
+
+  # Category Configuration
+  categories:
+    # Disguise Blocks Category
+    disguise-blocks:
+      display-name: "&eDisguise Blocks"
+      icon: GRASS_BLOCK
+      slot: 10
+      description:
+        - "&7Select a block to disguise as"
+
+      # Items in this category
+      items:
+        stone:
+          material: STONE
+          display-name: "&7Stone"
+          slot: 10
+          price: 0
+          lore:
+            - "&7Click to disguise as this block"
+            - "&aFree!"
+
+        dirt:
+          material: DIRT
+          display-name: "&7Dirt"
+          slot: 11
+          price: 0
+          lore:
+            - "&7Click to disguise as this block"
+            - "&aFree!"
+
+        grass_block:
+          material: GRASS_BLOCK
+          display-name: "&aGrass Block"
+          slot: 12
+          price: 0
+          lore:
+            - "&7Click to disguise as this block"
+            - "&aFree!"
+
+        oak_log:
+          material: OAK_LOG
+          display-name: "&6Oak Log"
+          slot: 13
+          price: 0
+          lore:
+            - "&7Click to disguise as this block"
+            - "&aFree!"
+
+        cobblestone:
+          material: COBBLESTONE
+          display-name: "&7Cobblestone"
+          slot: 14
+          price: 0
+          lore:
+            - "&7Click to disguise as this block"
+            - "&aFree!"
+
+        sand:
+          material: SAND
+          display-name: "&eSand"
+          slot: 15
+          price: 0
+          lore:
+            - "&7Click to disguise as this block"
+            - "&aFree!"
+
+        gravel:
+          material: GRAVEL
+          display-name: "&7Gravel"
+          slot: 16
+          price: 0
+          lore:
+            - "&7Click to disguise as this block"
+            - "&aFree!"
+
+  # Navigation Items
+  navigation:
+    back-button:
+      material: ARROW
+      display-name: "&cBack"
+      slot: 45
+
+    close-button:
+      material: BARRIER
+      display-name: "&cClose"
+      slot: 49
+
+  # Messages
+  messages:
+    shop-opened: "&aShop opened!"
+    disguise-activated: "&aDisguised as {block}!"
+    disguise-failed-obstructed: "&cCannot disguise here - location obstructed"
+    disguise-failed-liquid: "&cCannot disguise in liquid"
+    disguise-failed-occupied: "&cThis location is already occupied"
+    disguise-removed: "&cDisguise removed!"
+    item-cannot-drop: "&cYou cannot drop this item"
+    item-cannot-move: "&cYou cannot move this item"

@@ -12,11 +12,20 @@ repositories {
     maven("https://repo.papermc.io/repository/maven-public/") {
         name = "papermc-repo"
     }
+    maven("https://jitpack.io")
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.5-R0.1-SNAPSHOT")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7") {
+        exclude(group = "org.bukkit", module = "bukkit")
+    }
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+
+    // Testing
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    testImplementation("com.github.seeseemelk:MockBukkit-v1.20:3.9.0")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 }
 
 tasks {
@@ -24,7 +33,16 @@ tasks {
         // Configure the Minecraft version for our task.
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21")
+        minecraftVersion("1.21.5")
+    }
+
+    shadowJar {
+        archiveClassifier.set("")
+        relocate("kotlin", "com.hideandseek.libs.kotlin")
+    }
+
+    test {
+        useJUnitPlatform()
     }
 }
 

@@ -1,4 +1,29 @@
-name: easy-hide-and-seek
-version: '1.0-SNAPSHOT'
-main: org.example.hello.easyHideAndSeek.Main
+name: HideAndSeek
+version: ${version}
+main: com.hideandseek.HideAndSeekPlugin
 api-version: '1.21'
+author: HackLab
+description: Hide and Seek minigame plugin with disguise system
+website: https://github.com/hacklab/EasyHideAndSeek
+
+softdepend:
+  - Vault
+
+commands:
+  hideandseek:
+    description: Hide and Seek main command
+    aliases: [hs]
+    usage: /hs <subcommand>
+    permission: hideandseek.use
+    permission-message: "§c権限がありません"
+
+permissions:
+  hideandseek.use:
+    description: Basic plugin access
+    default: true
+  hideandseek.play:
+    description: Join and play games
+    default: true
+  hideandseek.admin:
+    description: Admin commands
+    default: op
