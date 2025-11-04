@@ -45,12 +45,13 @@ object PurchaseValidator {
         // 2. Check usage restrictions
         validateUsageRestriction(player, item, gameId)
 
-        // 3. Check economy balance
-        if (economy != null && item.price > 0) {
+        // 3. Check economy balance (T018: Use getEffectivePrice() for tier-based pricing)
+        val effectivePrice = item.getEffectivePrice()
+        if (economy != null && effectivePrice > 0) {
             val balance = economy.getBalance(player)
-            if (balance < item.price) {
+            if (balance < effectivePrice) {
                 throw InsufficientFundsException(
-                    required = item.price,
+                    required = effectivePrice,
                     actual = balance
                 )
             }
@@ -89,7 +90,7 @@ object PurchaseValidator {
     }
 
     /**
-     * Validate usage restrictions based on game state
+     * Validate usage restrictions based on game state (T024)
      */
     private fun validateUsageRestriction(
         player: Player,
@@ -115,6 +116,19 @@ object PurchaseValidator {
             UsageRestriction.ONCE_PER_GAME -> {
                 // This is handled by purchase limit check (maxPurchases = 1)
                 // No additional validation needed here
+            }
+
+            UsageRestriction.IN_GAME_ONLY -> {
+                // T024: Validate that player is in an active game
+                if (gameId.isEmpty() || gameId == "lobby") {
+                    throw UsageRestrictionException(
+                        itemId = item.id,
+                        restriction = UsageRestriction.IN_GAME_ONLY,
+                        reason = "Can only be used during an active game"
+                    )
+                }
+                // TODO: Add full GameManager validation when integrated
+                // Future: if (!gameManager.isGameActive(gameId)) throw exception
             }
         }
     }

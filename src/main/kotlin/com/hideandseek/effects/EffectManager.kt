@@ -93,6 +93,14 @@ interface EffectManager {
     fun getActiveEffectTypes(playerId: UUID): Set<EffectType>
 
     /**
+     * T028: Get all active effects for a player
+     *
+     * @param playerId Player UUID
+     * @return List of ActiveEffect objects (non-expired only)
+     */
+    fun getActiveEffects(playerId: UUID): List<ActiveEffect>
+
+    /**
      * Clean up expired effects from storage
      * Should be called periodically (e.g., every 60 seconds)
      *

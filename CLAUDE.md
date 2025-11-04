@@ -441,6 +441,8 @@ hideandseek.stats.reset   # 統計リセット
 ## Active Technologies
 - Kotlin 2.2.21 / Paper API 1.21.5 + Paper API、Vault API、Kotlin stdlib-jdk8 (003-seeker-shop)
 - YAMLファイル（設定）、メモリ内管理（アクティブ効果） (003-seeker-shop)
+- Kotlin 2.2.21 / JVM 21 + Paper API 1.21.5, Vault API 1.7, Kotlin stdlib-jdk8 (004-shop-items-review)
+- YAML configuration files (config.yml, shop.yml), in-memory state management during games (004-shop-items-review)
 
 ## Recent Changes
 - 003-seeker-shop: Added Kotlin 2.2.21 / Paper API 1.21.5 + Paper API、Vault API、Kotlin stdlib-jdk8

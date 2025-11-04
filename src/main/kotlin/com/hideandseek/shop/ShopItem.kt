@@ -22,8 +22,32 @@ data class ShopItem(
     val roleFilter: String? = null,       // "SEEKER" or "HIDER" (null = any role)
     val cooldown: Int? = null,            // Cooldown in seconds (null = no cooldown)
     val maxPurchases: Int? = null,        // Max purchases per game (null = unlimited)
-    val usageRestriction: UsageRestriction = UsageRestriction.ALWAYS
+    val usageRestriction: UsageRestriction = UsageRestriction.ALWAYS,
+
+    // NEW: Camouflage-based pricing (T006)
+    val camouflageTier: CamouflageTier? = null,
+    val camouflageMultiplier: Double? = null,
+
+    // NEW: Advanced restrictions (T006)
+    val teamMaxPurchases: Int? = null,
+    val globalMaxPurchases: Int? = null,
+    val resetTrigger: ResetTrigger? = null
 ) {
+    /**
+     * Calculate effective price based on camouflage tier (T007)
+     * If camouflage tier is set, use tier-based pricing
+     * Otherwise, use the direct price field
+     */
+    fun getEffectivePrice(): Int {
+        return when {
+            camouflageTier != null -> {
+                val basePrice = camouflageTier.basePrice
+                val multiplier = camouflageMultiplier ?: 1.0
+                (basePrice * multiplier).toInt()
+            }
+            else -> price
+        }
+    }
     /**
      * Validate that effect fields are consistent with action type
      * @throws IllegalStateException if configuration is invalid
