@@ -12,6 +12,8 @@ import java.util.UUID
  * @property gameId ID of the game session (for per-game limits)
  * @property price Amount paid in currency
  * @property used Whether the item has been used/consumed
+ * @property gamePhase T052: Game phase when purchased (PREPARATION or SEEK)
+ * @property playerBalance T053: Player's balance after purchase
  */
 data class ItemPurchaseRecord(
     val playerId: UUID,
@@ -19,7 +21,9 @@ data class ItemPurchaseRecord(
     val purchaseTime: Instant,
     val gameId: String,
     val price: Int,
-    val used: Boolean = false
+    val used: Boolean = false,
+    val gamePhase: String? = null,
+    val playerBalance: Double? = null
 ) {
     /**
      * Get elapsed time since purchase in seconds

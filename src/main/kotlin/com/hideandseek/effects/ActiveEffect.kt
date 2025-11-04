@@ -4,10 +4,12 @@ import java.time.Instant
 import java.util.UUID
 
 /**
- * Represents an active effect applied to a player
+ * T027: Represents an active effect applied to a player
  *
+ * @property effectId Unique identifier for this effect instance
  * @property playerId UUID of the player this effect is applied to
- * @property effectType Type of effect (VISION, GLOW, SPEED, REACH)
+ * @property effectType Type of effect (VISION, GLOW, SPEED, REACH, etc.)
+ * @property gameId Game session ID where effect was acquired
  * @property startTime When the effect started
  * @property endTime When the effect expires
  * @property intensity Effect strength multiplier (e.g., 1.5 for REACH)
@@ -15,8 +17,10 @@ import java.util.UUID
  * @property metadata Additional effect-specific data (e.g., original view distance)
  */
 data class ActiveEffect(
+    val effectId: UUID = UUID.randomUUID(),
     val playerId: UUID,
     val effectType: EffectType,
+    val gameId: String,
     val startTime: Instant,
     val endTime: Instant,
     val intensity: Double = 1.0,
@@ -74,5 +78,22 @@ data class ActiveEffect(
      */
     inline fun <reified T> getMetadata(key: String): T? {
         return metadata[key] as? T
+    }
+
+    /**
+     * T027: Format remaining time as MM:SS
+     */
+    fun formatRemainingTime(): String {
+        val seconds = getRemainingSeconds()
+        val minutes = seconds / 60
+        val secs = seconds % 60
+        return "%02d:%02d".format(minutes, secs)
+    }
+
+    /**
+     * T027: Get metadata value with default
+     */
+    inline fun <reified T> getMetadataOrDefault(key: String, default: T): T {
+        return (metadata[key] as? T) ?: default
     }
 }

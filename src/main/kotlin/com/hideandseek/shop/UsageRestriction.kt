@@ -23,5 +23,10 @@ enum class UsageRestriction {
     /**
      * Can only be purchased/used once per game
      */
-    ONCE_PER_GAME
+    ONCE_PER_GAME,
+
+    /**
+     * T024: Can only be purchased/used while in an active game (not in lobby)
+     */
+    IN_GAME_ONLY
 }

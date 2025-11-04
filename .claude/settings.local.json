@@ -5,7 +5,10 @@
       "Bash(./gradlew build:*)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
       "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git branch:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

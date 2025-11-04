@@ -24,8 +24,21 @@ class ShopManager(
         categories.clear()
         val shopConfig = configManager.shop.getConfigurationSection("shop")
         if (shopConfig != null) {
-            val loadedCategories = com.hideandseek.config.ShopConfig(shopConfig).loadCategories()
+            val config = com.hideandseek.config.ShopConfig(shopConfig)
+            val loadedCategories = config.loadCategories()
             categories.addAll(loadedCategories)
+
+            // T015: Replace disguise-blocks category items with dynamically generated tier-based items
+            val disguiseCategory = categories.find { it.id == "disguise-blocks" }
+            if (disguiseCategory != null) {
+                val dynamicDisguiseItems = config.getDisguiseBlockItems()
+                // Replace the category with new items
+                val updatedCategory = disguiseCategory.copy(items = dynamicDisguiseItems)
+                categories.removeIf { it.id == "disguise-blocks" }
+                categories.add(updatedCategory)
+                plugin.logger.info("Loaded ${dynamicDisguiseItems.size} disguise block items from tier configuration")
+            }
+
             plugin.logger.info("Loaded ${categories.size} shop categories")
         } else {
             plugin.logger.warning("No shop configuration found")
@@ -136,29 +149,44 @@ class ShopManager(
         )
 
         // T022: Filter items by player role
-        val visibleItems = if (playerRole != null) {
+        var visibleItems = if (playerRole != null) {
             category.getItemsForRole(playerRole)
         } else {
             category.items
         }
 
-        for (shopItem in visibleItems) {
-            if (shopItem.slot in 0..53) {
-                val item = ItemBuilder(shopItem.material)
-                    .displayName(shopItem.displayName)
-                    .lore(
-                        shopItem.lore +
-                        listOf(
-                            "",
-                            "&7Price: &e${shopItem.price} coins",
-                            "&aClick to purchase"
-                        )
-                    )
-                    .persistentData(itemIdKey, PersistentDataType.STRING, shopItem.id)
-                    .persistentData(categoryKey, PersistentDataType.STRING, category.id)
-                    .build()
+        // T057: Sort items by price within categories (progressive discovery)
+        // Lower price items appear first for easier access
+        visibleItems = visibleItems.sortedBy { it.getEffectivePrice() }
 
-                inventory.setItem(shopItem.slot, item)
+        // T016: Group disguise blocks by camouflage tier
+        if (categoryId == "disguise-blocks") {
+            buildDisguiseBlocksGUI(inventory, visibleItems, category.id)
+        } else {
+            // Standard item layout for non-disguise categories
+            for (shopItem in visibleItems) {
+                if (shopItem.slot in 0..53) {
+                    // T025: Build restriction indicator lore
+                    val restrictionLore = buildRestrictionLore(shopItem)
+
+                    val effectivePrice = shopItem.getEffectivePrice()
+                    val item = ItemBuilder(shopItem.material)
+                        .displayName(shopItem.displayName)
+                        .lore(
+                            shopItem.lore +
+                            restrictionLore +
+                            listOf(
+                                "",
+                                if (effectivePrice == 0) "&aFree!" else "&7Price: &e$effectivePrice coins",
+                                "&aClick to purchase"
+                            )
+                        )
+                        .persistentData(itemIdKey, PersistentDataType.STRING, shopItem.id)
+                        .persistentData(categoryKey, PersistentDataType.STRING, category.id)
+                        .build()
+
+                    inventory.setItem(shopItem.slot, item)
+                }
             }
         }
 
@@ -179,6 +207,76 @@ class ShopManager(
         player.openInventory(inventory)
     }
 
+    /**
+     * T016: Build GUI for disguise blocks category with tier grouping
+     */
+    private fun buildDisguiseBlocksGUI(
+        inventory: org.bukkit.inventory.Inventory,
+        items: List<ShopItem>,
+        categoryId: String
+    ) {
+        // Group items by camouflage tier
+        val itemsByTier = items.groupBy { it.camouflageTier }
+
+        var currentSlot = 0
+        val tiers = listOf(
+            CamouflageTier.HIGH_VISIBILITY,
+            CamouflageTier.MEDIUM_VISIBILITY,
+            CamouflageTier.LOW_VISIBILITY
+        )
+
+        for (tier in tiers) {
+            val tierItems = itemsByTier[tier] ?: continue
+
+            // Add tier separator (colored glass pane)
+            if (currentSlot > 0) {
+                currentSlot = ((currentSlot / 9) + 1) * 9 // Move to next row
+            }
+
+            val separatorColor = when (tier) {
+                CamouflageTier.HIGH_VISIBILITY -> Material.LIME_STAINED_GLASS_PANE
+                CamouflageTier.MEDIUM_VISIBILITY -> Material.YELLOW_STAINED_GLASS_PANE
+                CamouflageTier.LOW_VISIBILITY -> Material.ORANGE_STAINED_GLASS_PANE
+            }
+
+            val separator = ItemBuilder(separatorColor)
+                .displayName(tier.getDisplayName())
+                .lore(listOf(
+                    tier.getFormattedDescription(),
+                    "",
+                    if (tier.basePrice == 0) "&aFree!" else "&ePrice: &6${tier.basePrice} coins"
+                ))
+                .build()
+
+            inventory.setItem(currentSlot, separator)
+            currentSlot++
+
+            // Add tier items
+            for (shopItem in tierItems) {
+                if (currentSlot >= 45) break // Reserve bottom row for navigation
+
+                val effectivePrice = shopItem.getEffectivePrice()
+                val item = ItemBuilder(shopItem.material)
+                    .displayName(shopItem.displayName)
+                    .lore(
+                        shopItem.lore +
+                        listOf(
+                            "",
+                            "&7Tier: ${tier.getDisplayName()}",
+                            if (effectivePrice == 0) "&aFree!" else "&7Price: &e$effectivePrice coins",
+                            "&aClick to purchase"
+                        )
+                    )
+                    .persistentData(itemIdKey, PersistentDataType.STRING, shopItem.id)
+                    .persistentData(categoryKey, PersistentDataType.STRING, categoryId)
+                    .build()
+
+                inventory.setItem(currentSlot, item)
+                currentSlot++
+            }
+        }
+    }
+
     fun getCategory(categoryId: String): ShopCategory? {
         return categories.find { it.id == categoryId }
     }
@@ -196,5 +294,54 @@ class ShopManager(
     fun getItemIdFromItem(item: ItemStack): String? {
         val meta = item.itemMeta ?: return null
         return meta.persistentDataContainer.get(itemIdKey, PersistentDataType.STRING)
+    }
+
+    /**
+     * T025/T056: Build restriction indicator lore lines for shop items
+     */
+    private fun buildRestrictionLore(item: ShopItem): List<String> {
+        val lore = mutableListOf<String>()
+
+        // T056: Power Item indicator (800+ coins)
+        val effectivePrice = item.getEffectivePrice()
+        if (effectivePrice >= 800) {
+            lore.add("")
+            lore.add("&6⚡ パワーアイテム &6⚡")
+        }
+
+        // Usage restriction indicator
+        when (item.usageRestriction) {
+            UsageRestriction.SEEK_PHASE_ONLY -> {
+                lore.add("")
+                lore.add("&cRequires: Seek phase")
+            }
+            UsageRestriction.IN_GAME_ONLY -> {
+                lore.add("")
+                lore.add("&cRequires: Active game")
+            }
+            UsageRestriction.NOT_WHILE_CAPTURED -> {
+                lore.add("")
+                lore.add("&cCannot use while captured")
+            }
+            UsageRestriction.ONCE_PER_GAME -> {
+                lore.add("")
+                lore.add("&cOne use per game")
+            }
+            UsageRestriction.ALWAYS -> {
+                // No restriction indicator
+            }
+        }
+
+        // Purchase limit indicator
+        if (item.maxPurchases != null) {
+            lore.add("&7Limit: &e${item.maxPurchases} per game")
+        }
+
+        // Cooldown indicator
+        if (item.cooldown != null) {
+            lore.add("&7Cooldown: &e${item.cooldown}s")
+        }
+
+        return lore
     }
 }

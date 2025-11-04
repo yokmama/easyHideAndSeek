@@ -1,14 +1,124 @@
 package com.hideandseek.config
 
 import com.hideandseek.effects.EffectType
-import com.hideandseek.shop.ShopAction
-import com.hideandseek.shop.ShopCategory
-import com.hideandseek.shop.ShopItem
-import com.hideandseek.shop.UsageRestriction
+import com.hideandseek.shop.*
 import org.bukkit.Material
 import org.bukkit.configuration.ConfigurationSection
 
 class ShopConfig(private val config: ConfigurationSection) {
+
+    // NEW: T008 - Store disguise blocks mapping
+    private val disguiseBlocksMap: Map<CamouflageTier, List<Material>> by lazy {
+        loadDisguiseBlocks()
+    }
+
+    /**
+     * T009: Load disguise blocks configuration from disguise-blocks section
+     * Returns mapping of CamouflageTier to Material list
+     */
+    private fun loadDisguiseBlocks(): Map<CamouflageTier, List<Material>> {
+        val result = mutableMapOf<CamouflageTier, List<Material>>()
+        val disguiseSection = config.getConfigurationSection("disguise-blocks") ?: return emptyMap()
+
+        // Load high-visibility tier
+        disguiseSection.getConfigurationSection("high-visibility")?.let { section ->
+            val blocks = section.getStringList("blocks").mapNotNull { blockName ->
+                try {
+                    Material.valueOf(blockName.uppercase())
+                } catch (e: IllegalArgumentException) {
+                    println("Invalid material '$blockName' in high-visibility tier")
+                    null
+                }
+            }
+            result[CamouflageTier.HIGH_VISIBILITY] = blocks
+        }
+
+        // Load medium-visibility tier
+        disguiseSection.getConfigurationSection("medium-visibility")?.let { section ->
+            val blocks = section.getStringList("blocks").mapNotNull { blockName ->
+                try {
+                    Material.valueOf(blockName.uppercase())
+                } catch (e: IllegalArgumentException) {
+                    println("Invalid material '$blockName' in medium-visibility tier")
+                    null
+                }
+            }
+            result[CamouflageTier.MEDIUM_VISIBILITY] = blocks
+        }
+
+        // Load low-visibility tier
+        disguiseSection.getConfigurationSection("low-visibility")?.let { section ->
+            val blocks = section.getStringList("blocks").mapNotNull { blockName ->
+                try {
+                    Material.valueOf(blockName.uppercase())
+                } catch (e: IllegalArgumentException) {
+                    println("Invalid material '$blockName' in low-visibility tier")
+                    null
+                }
+            }
+            result[CamouflageTier.LOW_VISIBILITY] = blocks
+        }
+
+        return result
+    }
+
+    /**
+     * T009: Get all disguise blocks as ShopItem list
+     * Generates ShopItems for each configured disguise block
+     */
+    fun getDisguiseBlockItems(): List<ShopItem> {
+        val items = mutableListOf<ShopItem>()
+        var slotCounter = 0
+
+        for ((tier, materials) in disguiseBlocksMap) {
+            for (material in materials) {
+                items.add(createDisguiseBlockItem(material, tier, slotCounter++))
+            }
+        }
+
+        return items
+    }
+
+    /**
+     * T013/T023: Helper method to create ShopItem for a disguise block
+     */
+    private fun createDisguiseBlockItem(
+        material: Material,
+        tier: CamouflageTier,
+        slot: Int
+    ): ShopItem {
+        val materialName = material.name.lowercase().replace('_', ' ')
+            .split(' ').joinToString(" ") { it.capitalize() }
+
+        return ShopItem(
+            id = "disguise-${material.name.lowercase()}",
+            material = material,
+            displayName = "§e$materialName",
+            lore = listOf(
+                "§7Click to disguise as this block",
+                "",
+                "§7Tier: ${tier.getDisplayName()}",
+                tier.getFormattedDescription(),
+                "",
+                if (tier.basePrice == 0) "§aFree!" else "§eCost: §6${tier.basePrice} coins",
+                "",
+                "§cRequires: Active game"
+            ),
+            slot = slot,
+            price = tier.basePrice,
+            action = ShopAction.Disguise(material),
+            roleFilter = "HIDER",
+            camouflageTier = tier,
+            usageRestriction = UsageRestriction.IN_GAME_ONLY  // T023: Disguise only during game
+        )
+    }
+
+    /**
+     * Get disguise blocks by tier
+     */
+    fun getDisguiseBlocksByTier(tier: CamouflageTier): List<Material> {
+        return disguiseBlocksMap[tier] ?: emptyList()
+    }
 
     fun loadCategories(): List<ShopCategory> {
         val categories = mutableListOf<ShopCategory>()

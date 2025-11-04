@@ -1,5 +1,15 @@
 # Shop Configuration
+# Version: 2.0 - Camouflage-based pricing system
+#
+# T055: Item Price Tier Recommendations
+# - Early Game (< 300 coins): Basic utility items, essential tools
+# - Mid Game (300-500 coins): Tactical items, moderate advantages
+# - Late Game (500-800 coins): Strategic items, powerful effects
+# - Power Items (800+ coins): Game-changing items with purchase limits
+#
 shop:
+  version: 2
+
   # Shop Item Configuration
   shop-item:
     material: EMERALD
@@ -13,6 +23,41 @@ shop:
   shop-gui:
     title: "&8Shop Menu"
     size: 54
+
+  # Camouflage-based pricing tiers for disguise blocks
+  # Innovation: High-visibility blocks are FREE, environment-blending blocks cost money
+  disguise-blocks:
+    high-visibility:
+      price: 0
+      blocks:
+        - MELON
+        - PUMPKIN
+        - SPONGE
+        - GOLD_BLOCK
+        - DIAMOND_BLOCK
+        - GLOWSTONE
+        - SEA_LANTERN
+
+    medium-visibility:
+      price: 50
+      blocks:
+        - OAK_LOG
+        - BIRCH_LOG
+        - BRICK
+        - SANDSTONE
+        - GRAVEL
+        - GLASS
+
+    low-visibility:
+      price: 100
+      blocks:
+        - STONE
+        - COBBLESTONE
+        - DIRT
+        - GRASS_BLOCK
+        - ANDESITE
+        - DIORITE
+        - GRANITE
 
   # Category Configuration
   categories:
@@ -93,7 +138,98 @@ shop:
           role-filter: "SEEKER"
           usage-restriction: "SEEK_PHASE_ONLY"
 
+        # T044: Tracker Compass - Points to nearest Hider
+        tracker-compass:
+          material: COMPASS
+          display-name: "&6追跡コンパス"
+          slot: 14
+          price: 250
+          lore:
+            - "&730秒間最も近いハイダーを指します"
+            - "&72秒ごとに自動更新"
+            - ""
+            - "&e価格: &6250 coins"
+          effect-type: "TRACKER_COMPASS"
+          effect-duration: 30
+          effect-intensity: 1.0
+          role-filter: "SEEKER"
+          usage-restriction: "SEEK_PHASE_ONLY"
+
+        # T045: Area Scan - Reveals Hider count in radius
+        area-scan:
+          material: ECHO_SHARD
+          display-name: "&bエリアスキャン"
+          slot: 15
+          price: 450
+          lore:
+            - "&712ブロック範囲内のハイダー数と方向を表示"
+            - "&7壁越しでも検出可能"
+            - ""
+            - "&e価格: &6450 coins"
+          effect-type: "AREA_SCAN"
+          effect-duration: 5
+          effect-intensity: 12.0
+          role-filter: "SEEKER"
+          usage-restriction: "SEEK_PHASE_ONLY"
+
+        # T046: Eagle Eye - Highlights disguised blocks
+        eagle-eye:
+          material: ENDER_EYE
+          display-name: "&e鷹の目"
+          slot: 16
+          price: 500
+          lore:
+            - "&720秒間偽装ブロックがパーティクルで光る"
+            - "&715ブロック範囲内を検出"
+            - ""
+            - "&e価格: &6500 coins"
+            - "&c購入制限: 2回/ゲーム"
+          effect-type: "EAGLE_EYE"
+          effect-duration: 20
+          effect-intensity: 15.0
+          role-filter: "SEEKER"
+          max-purchases: 2
+          usage-restriction: "SEEK_PHASE_ONLY"
+
+        # T047: Tracker Insight - Shows last-moved times
+        tracker-insight:
+          material: CLOCK
+          display-name: "&d追跡の洞察"
+          slot: 17
+          price: 200
+          lore:
+            - "&7各ハイダーの静止時間を表示"
+            - "&7偽装中のハイダーを推測"
+            - ""
+            - "&e価格: &6200 coins"
+          effect-type: "TRACKER_INSIGHT"
+          effect-duration: 10
+          effect-intensity: 1.0
+          role-filter: "SEEKER"
+          usage-restriction: "SEEK_PHASE_ONLY"
+
+        # T048: Capture Net - 2x capture reward
+        capture-net:
+          material: FISHING_ROD
+          display-name: "&c捕獲ネット"
+          slot: 18
+          price: 600
+          lore:
+            - "&710秒以内に捕獲すると報酬が2倍"
+            - "&7タイミングが重要"
+            - ""
+            - "&e価格: &6600 coins"
+            - "&c購入制限: 2回/ゲーム"
+          effect-type: "CAPTURE_NET"
+          effect-duration: 10
+          effect-intensity: 2.0
+          role-filter: "SEEKER"
+          max-purchases: 2
+          usage-restriction: "SEEK_PHASE_ONLY"
+
     # Disguise Blocks Category
+    # T023: Items in this category are dynamically generated from disguise-blocks section
+    # Static items below are preserved for backward compatibility but will be replaced at runtime
     disguise-blocks:
       display-name: "&eDisguise Blocks"
       icon: GRASS_BLOCK
@@ -102,7 +238,7 @@ shop:
       description:
         - "&7Select a block to disguise as"
 
-      # Items in this category
+      # Items in this category (legacy - replaced by tier-based generation)
       items:
         stone:
           material: STONE
@@ -112,6 +248,7 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+          usage-restriction: "IN_GAME_ONLY"
 
         dirt:
           material: DIRT
@@ -121,6 +258,7 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+          usage-restriction: "IN_GAME_ONLY"
 
         grass_block:
           material: GRASS_BLOCK
@@ -130,6 +268,7 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+          usage-restriction: "IN_GAME_ONLY"
 
         oak_log:
           material: OAK_LOG
@@ -139,6 +278,7 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+          usage-restriction: "IN_GAME_ONLY"
 
         cobblestone:
           material: COBBLESTONE
@@ -148,6 +288,7 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+          usage-restriction: "IN_GAME_ONLY"
 
         sand:
           material: SAND
@@ -157,6 +298,7 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+          usage-restriction: "IN_GAME_ONLY"
 
         gravel:
           material: GRAVEL
@@ -166,6 +308,7 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+          usage-restriction: "IN_GAME_ONLY"
 
     # Taunt Items Category (Hider only)
     taunt-items:
@@ -207,6 +350,72 @@ shop:
           taunt-type: "FIREWORK"
           taunt-bonus: 100
           role-filter: "HIDER"
+
+    # T051: Hider Utility Items Category (NEW)
+    hider-utility:
+      display-name: "&aハイダー用ユーティリティ"
+      icon: FEATHER
+      slot: 13
+      role-filter: "HIDER"
+      description:
+        - "&7Escape and survival items"
+        - "&7for clever Hiders"
+
+      items:
+        # Shadow Sprint - Speed boost
+        shadow-sprint:
+          material: FEATHER
+          display-name: "&9影の疾走"
+          slot: 10
+          price: 300
+          lore:
+            - "&720秒間スピードアップ"
+            - "&7逃走・移動に最適"
+            - ""
+            - "&e価格: &6300 coins"
+          effect-type: "SHADOW_SPRINT"
+          effect-duration: 20
+          effect-intensity: 1.5
+          role-filter: "HIDER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        # Decoy Block - Fake disguise
+        decoy-block:
+          material: ARMOR_STAND
+          display-name: "&6デコイブロック"
+          slot: 11
+          price: 500
+          lore:
+            - "&7偽の偽装ブロックを設置"
+            - "&7シーカーを欺く"
+            - ""
+            - "&e価格: &6500 coins"
+            - "&c制限: 最大2個まで"
+          effect-type: "DECOY_BLOCK"
+          effect-duration: 600
+          effect-intensity: 1.0
+          role-filter: "HIDER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        # Second Chance - Respawn on capture
+        second-chance:
+          material: TOTEM_OF_UNDYING
+          display-name: "&eセカンドチャンス"
+          slot: 12
+          price: 800
+          lore:
+            - "&7捕獲時に1回だけ復活"
+            - "&710秒間無敵"
+            - ""
+            - "&e価格: &6800 coins"
+            - "&c購入制限: 1回/ゲーム"
+            - "&6⚡ パワーアイテム"
+          effect-type: "SECOND_CHANCE"
+          effect-duration: 10
+          effect-intensity: 1.0
+          role-filter: "HIDER"
+          max-purchases: 1
+          usage-restriction: "IN_GAME_ONLY"
 
   # Navigation Items
   navigation:

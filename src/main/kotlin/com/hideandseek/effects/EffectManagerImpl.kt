@@ -64,9 +64,12 @@ class EffectManagerImpl(
             val startTime = Instant.now()
             val endTime = startTime.plusSeconds(durationSeconds.toLong())
 
+            // T027: gameId should be passed from caller, for now use "unknown" as placeholder
+            // TODO: Update callers to pass actual gameId
             var effect = ActiveEffect(
                 playerId = player.uniqueId,
                 effectType = effectType,
+                gameId = metadata["gameId"] as? String ?: "unknown",
                 startTime = startTime,
                 endTime = endTime,
                 intensity = intensity,
@@ -196,6 +199,13 @@ class EffectManagerImpl(
         return storage.getAllEffects(playerId)
             .filterValues { !it.isExpired() }
             .keys
+    }
+
+    override fun getActiveEffects(playerId: UUID): List<ActiveEffect> {
+        return storage.getAllEffects(playerId)
+            .values
+            .filter { !it.isExpired() }
+            .toList()
     }
 
     override fun cleanupExpired(): Int {
