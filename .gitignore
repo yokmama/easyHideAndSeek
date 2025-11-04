@@ -29,3 +29,4 @@ logs/
 # Test output
 test-output/
 coverage/
+.gradle
