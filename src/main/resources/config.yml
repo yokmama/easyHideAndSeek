@@ -11,6 +11,22 @@ game:
   seek-time: 600           # Seek time in seconds - default 10 minutes
   seeker-ratio: 0.23       # Seeker ratio (23%)
 
+# Point System Configuration
+points:
+  enabled: true
+
+  # Time-based points for hiders
+  points-per-second: 1.0          # Points earned per second while alive
+  accumulation-interval: 15       # Update points every N seconds (default: 15)
+
+  # Capture points
+  capture-steal-percentage: 0.5   # Percentage of hider's points stolen by seeker (50%)
+
+  # Taunt item bonuses
+  taunt-bonuses:
+    snowball: 50                  # Bonus points for throwing snowball
+    firework: 100                 # Bonus points for launching firework
+
 capture:
   method: "ATTACK"         # Capture method
   damage: false            # Whether to deal actual damage
@@ -24,3 +40,62 @@ economy:
     seeker-win: 1000
     per-capture: 200
     participation: 100
+
+# Messages Configuration
+messages:
+  effects:
+    # Purchase validation errors
+    insufficient-funds: "&cお金が足りません。必要: &e{required} coins &c/ 所持: &e{actual} coins"
+    purchase-limit: "&cこのアイテムは購入制限に達しています ({current}/{limit})"
+    cooldown-remaining: "&cクールダウン中です。残り時間: &e{seconds}秒"
+    inventory-full: "&cインベントリがいっぱいです"
+    not-seeker: "&cこのアイテムはシーカー専用です"
+    not-hider: "&cこのアイテムはハイダー専用です"
+    wrong-phase: "&c探索フェーズ中のみ使用できます"
+
+    # Purchase success
+    purchase-success: "&aアイテムを購入しました: &e{item}"
+    effect-applied: "&b{effect} &aが適用されました（&e{duration}秒間&a）"
+    effect-expired: "&7{effect} &cの効果が切れました"
+
+    # Effect application errors
+    effect-already-active: "&cこのエフェクトは既に適用されています"
+    effect-failed: "&cエフェクトの適用に失敗しました"
+
+# Effect System Configuration
+effects:
+  # Overlap policies for when same effect is applied twice
+  overlap-policies:
+    default: "REPLACE"          # REPLACE | EXTEND | REJECT | STACK
+    vision: "REPLACE"           # Replace existing vision effect
+    glow: "REPLACE"             # Replace existing glow effect
+    speed: "REPLACE"            # Replace existing speed effect
+    reach: "REPLACE"            # Replace existing reach effect
+
+  # Maximum duration when extending effects
+  max-extended-duration: 120    # seconds
+
+  # Performance settings
+  performance:
+    glow-update-interval: 10    # Particle update interval in ticks (20 ticks = 1 second)
+    glow-max-distance: 50       # Maximum distance to show glow particles (blocks)
+    cleanup-task-interval: 60   # Cleanup expired effects every N seconds
+
+  # Feedback settings
+  feedback:
+    particles:
+      enabled: true
+      effect-start: "SPELL_MOB"          # Particle when effect starts
+      effect-end: "BLOCK_DUST"           # Particle when effect expires
+      glow-particle: "END_ROD"           # Particle for glow detector
+
+    sounds:
+      enabled: true
+      effect-start: "ITEM_PICKUP"        # Sound when effect starts
+      effect-end: "BLOCK_BREAK"          # Sound when effect expires
+      effect-fail: "VILLAGER_NO"         # Sound when effect fails to apply
+
+    action-bar:
+      enabled: true
+      update-interval: 20                # Update action bar every N ticks (20 = 1 second)
+      show-remaining-time: true          # Show remaining time for effects

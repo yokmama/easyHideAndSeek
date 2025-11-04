@@ -4,6 +4,7 @@ import org.bukkit.GameMode
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
+import org.bukkit.potion.PotionEffect
 import org.bukkit.scoreboard.Scoreboard
 
 data class PlayerBackup(
@@ -11,12 +12,28 @@ data class PlayerBackup(
     val armor: Array<ItemStack?>,
     val location: Location,
     val gameMode: GameMode,
-    val scoreboard: Scoreboard?
+    val scoreboard: Scoreboard?,
+    val potionEffects: Collection<PotionEffect>,
+    val viewDistance: Int
 ) {
     fun restore(player: Player) {
+        // Clear all active potion effects first
+        player.activePotionEffects.forEach { effect ->
+            player.removePotionEffect(effect.type)
+        }
+
+        // Restore original potion effects
+        potionEffects.forEach { effect ->
+            player.addPotionEffect(effect)
+        }
+
+        // Restore inventory
         player.inventory.contents = inventory.clone()
         player.inventory.armorContents = armor.clone()
         player.gameMode = gameMode
+
+        // Restore view distance
+        player.sendViewDistance = viewDistance
 
         // Safe teleport
         if (location.world != null && location.isChunkLoaded) {
@@ -38,7 +55,9 @@ data class PlayerBackup(
                 armor = player.inventory.armorContents.clone(),
                 location = player.location.clone(),
                 gameMode = player.gameMode,
-                scoreboard = player.scoreboard
+                scoreboard = player.scoreboard,
+                potionEffects = player.activePotionEffects.toList(),
+                viewDistance = player.clientViewDistance
             )
         }
     }

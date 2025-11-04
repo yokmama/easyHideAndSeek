@@ -7,11 +7,16 @@ import com.hideandseek.commands.JoinCommand
 import com.hideandseek.commands.LeaveCommand
 import com.hideandseek.config.ConfigManager
 import com.hideandseek.disguise.DisguiseManager
+import com.hideandseek.effects.EffectManagerImpl
+import com.hideandseek.effects.EffectStorage
 import com.hideandseek.game.GameManager
 import com.hideandseek.listeners.*
 import com.hideandseek.scoreboard.ScoreboardManager
+import com.hideandseek.shop.PurchaseStorage
 import com.hideandseek.shop.ShopManager
+import com.hideandseek.utils.EffectScheduler
 import com.hideandseek.utils.TaskScheduler
+import net.milkbowl.vault.economy.Economy
 import org.bukkit.plugin.java.JavaPlugin
 
 /**
@@ -34,6 +39,18 @@ class HideAndSeekPlugin : JavaPlugin() {
     lateinit var taskScheduler: TaskScheduler
         private set
 
+    // Effect system components
+    lateinit var effectManager: EffectManagerImpl
+        private set
+    lateinit var purchaseStorage: PurchaseStorage
+        private set
+    var economy: Economy? = null
+        private set
+
+    // Point system
+    lateinit var pointManager: com.hideandseek.points.PointManager
+        private set
+
     override fun onEnable() {
         logger.info("HideAndSeek plugin enabling...")
 
@@ -52,9 +69,41 @@ class HideAndSeekPlugin : JavaPlugin() {
         disguiseManager = DisguiseManager(this, gameManager)
         scoreboardManager = ScoreboardManager(this)
 
+        // Initialize effect system
+        val effectStorage = EffectStorage()
+        val effectScheduler = EffectScheduler(this)
+        effectManager = EffectManagerImpl(this, effectStorage, effectScheduler, logger)
+        purchaseStorage = PurchaseStorage()
+
+        // Initialize point system
+        pointManager = com.hideandseek.points.PointManager(this)
+
+        // Register effect handlers
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.VISION,
+            com.hideandseek.items.VisionEffectHandler()
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.GLOW,
+            com.hideandseek.items.GlowDetectorHandler(this, disguiseManager)
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.SPEED,
+            com.hideandseek.items.SpeedBoostHandler()
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.REACH,
+            com.hideandseek.items.ReachExtenderHandler()
+        )
+
+        // Setup Vault economy
+        setupEconomy()
+
         gameManager.shopManager = shopManager
         gameManager.disguiseManager = disguiseManager
         gameManager.scoreboardManager = scoreboardManager
+        gameManager.pointManager = pointManager
+        gameManager.arenaManager = arenaManager
 
         registerCommands()
         registerListeners()
@@ -64,6 +113,29 @@ class HideAndSeekPlugin : JavaPlugin() {
 
     override fun onDisable() {
         logger.info("HideAndSeek plugin disabling...")
+
+        // End any active game and restore all players
+        gameManager.activeGame?.let { game ->
+            logger.info("Cleaning up active game...")
+            gameManager.endGame(com.hideandseek.game.GameResult.CANCELLED)
+        }
+
+        // Clear all disguises
+        disguiseManager.clearAllDisguises()
+
+        // Clear all active effects for all online players
+        server.onlinePlayers.forEach { player ->
+            effectManager.removeAllEffects(player.uniqueId)
+
+            // Remove all potion effects
+            player.activePotionEffects.forEach { effect ->
+                player.removePotionEffect(effect.type)
+            }
+
+            // Reset view distance
+            player.sendViewDistance = 10
+        }
+
         taskScheduler.cancelAll()
         logger.info("HideAndSeek plugin disabled!")
     }
@@ -93,20 +165,44 @@ class HideAndSeekPlugin : JavaPlugin() {
     private fun registerListeners() {
         val pluginManager = server.pluginManager
 
-        val shopListener = ShopListener(shopManager, gameManager)
+        val shopListener = ShopListener(this, shopManager, gameManager, effectManager, purchaseStorage, economy)
         shopListener.disguiseManager = disguiseManager
 
         val playerMoveListener = PlayerMoveListener(disguiseManager)
         playerMoveListener.setPlugin(this)
+
+        val effectCleanupListener = com.hideandseek.listeners.EffectCleanupListener(effectManager, logger)
+        val playerJoinListener = com.hideandseek.listeners.PlayerJoinListener(this, disguiseManager, effectManager, gameManager)
 
         pluginManager.registerEvents(shopListener, this)
         pluginManager.registerEvents(InventoryListener(shopManager), this)
         pluginManager.registerEvents(PlayerInteractListener(shopManager, gameManager), this)
         pluginManager.registerEvents(playerMoveListener, this)
         pluginManager.registerEvents(BlockDamageListener(disguiseManager, gameManager), this)
-        pluginManager.registerEvents(EntityDamageByEntityListener(disguiseManager, gameManager), this)
+        pluginManager.registerEvents(EntityDamageByEntityListener(disguiseManager, gameManager, pointManager, this), this)
         pluginManager.registerEvents(BoundaryListener(gameManager), this)
+        pluginManager.registerEvents(effectCleanupListener, this)
+        pluginManager.registerEvents(playerJoinListener, this)
 
         logger.info("Listeners registered")
+    }
+
+    /**
+     * Setup Vault economy integration
+     */
+    private fun setupEconomy() {
+        if (server.pluginManager.getPlugin("Vault") == null) {
+            logger.warning("Vault not found! Economy features will be disabled.")
+            return
+        }
+
+        val rsp = server.servicesManager.getRegistration(Economy::class.java)
+        if (rsp == null) {
+            logger.warning("Economy provider not found! Economy features will be disabled.")
+            return
+        }
+
+        economy = rsp.provider
+        logger.info("Vault economy integration enabled (${economy!!.name})")
     }
 }

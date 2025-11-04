@@ -103,6 +103,11 @@ class ScoreboardManager(
 
                 val captureCount = game.players[player.uniqueId]?.captureCount ?: 0
                 lines.add("&7Your captures: &e$captureCount")
+
+                // Display points
+                val pointMgr = (plugin as? com.hideandseek.HideAndSeekPlugin)?.pointManager
+                val points = pointMgr?.getPoints(player.uniqueId) ?: 0
+                lines.add("&7Points: &6$points")
             }
             PlayerRole.HIDER -> {
                 lines.add("&7Role: &aHider")
@@ -115,6 +120,11 @@ class ScoreboardManager(
                 } else {
                     lines.add("&7Status: &aHiding")
                 }
+
+                // Display points
+                val pointMgr = (plugin as? com.hideandseek.HideAndSeekPlugin)?.pointManager
+                val points = pointMgr?.getPoints(player.uniqueId) ?: 0
+                lines.add("&7Points: &6$points")
             }
             PlayerRole.SPECTATOR -> {
                 lines.add("&7Role: &7Spectator")

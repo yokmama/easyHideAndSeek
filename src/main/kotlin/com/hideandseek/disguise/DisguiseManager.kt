@@ -79,7 +79,6 @@ class DisguiseManager(
         disguises[player.uniqueId] = disguiseData
         blockLocations[footLocation] = player.uniqueId
 
-        plugin.logger.info("[Disguise] Player ${player.name} disguised as ${blockType.name} at (${footLocation.blockX}, ${footLocation.blockY}, ${footLocation.blockZ})")
         MessageUtil.send(player, "&aDisguised as ${blockType.name}")
         return true
     }

@@ -35,8 +35,10 @@ class PlayerInteractListener(
                     return
                 }
 
-                // Open the shop menu
-                shopManager.openMainMenu(player)
+                // Get player role and open the shop menu with role filtering
+                val playerData = game.players[player.uniqueId]
+                val playerRole = playerData?.role?.name  // "SEEKER", "HIDER", or "SPECTATOR"
+                shopManager.openMainMenu(player, playerRole)
             }
         }
     }

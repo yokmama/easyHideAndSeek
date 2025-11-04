@@ -30,12 +30,17 @@ class ShopCommand(
             return true
         }
 
-        if (!game.players.containsKey(sender.uniqueId)) {
+        val playerData = game.players[sender.uniqueId]
+        if (playerData == null) {
             MessageUtil.send(sender, "&cYou are not in this game")
             return true
         }
 
-        shopManager.openMainMenu(sender)
+        // Pass player role to filter shop items
+        val playerRole = playerData.role.name // "SEEKER", "HIDER", or "SPECTATOR"
+        sender.sendMessage("§a[DEBUG ShopCommand] Player role: $playerRole")
+        sender.sendMessage("§a[DEBUG ShopCommand] PlayerData.role: ${playerData.role}")
+        shopManager.openMainMenu(sender, playerRole)
         return true
     }
 }

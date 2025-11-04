@@ -62,21 +62,48 @@ class ShopManager(
         return meta.persistentDataContainer.has(shopItemKey, PersistentDataType.BYTE)
     }
 
-    fun openMainMenu(player: Player) {
+    fun openMainMenu(player: Player, playerRole: String? = null) {
         if (categories.isEmpty()) {
             MessageUtil.send(player, "&cShop is not available")
             return
         }
 
+        // Debug logging
+        player.sendMessage("§e[DEBUG] openMainMenu called")
+        player.sendMessage("§e[DEBUG] Player role: $playerRole")
+        player.sendMessage("§e[DEBUG] Total categories: ${categories.size}")
+        categories.forEach { cat ->
+            player.sendMessage("§e[DEBUG] Category: ${cat.id}, roleFilter: ${cat.roleFilter}, slot: ${cat.slot}")
+        }
+
         val inventory = Bukkit.createInventory(null, 54, MessageUtil.colorize("&a&lShop Menu"))
 
-        for (category in categories) {
+        // T022: Filter categories by player role
+        val visibleCategories = if (playerRole != null) {
+            categories.filter { it.isVisibleTo(playerRole) }
+        } else {
+            categories
+        }
+
+        player.sendMessage("§e[DEBUG] Visible categories: ${visibleCategories.size}")
+        visibleCategories.forEach { cat ->
+            player.sendMessage("§e[DEBUG] Visible: ${cat.id}")
+        }
+
+        for (category in visibleCategories) {
             if (category.slot in 0..53) {
+                // Count role-filtered items if role is specified
+                val itemCount = if (playerRole != null) {
+                    category.getItemsForRole(playerRole).size
+                } else {
+                    category.items.size
+                }
+
                 val item = ItemBuilder(category.icon)
                     .displayName(category.displayName)
                     .lore(listOf(
                         "&7Click to view items",
-                        "&7${category.items.size} items available"
+                        "&7$itemCount items available"
                     ))
                     .persistentData(categoryKey, PersistentDataType.STRING, category.id)
                     .build()
@@ -95,7 +122,7 @@ class ShopManager(
         player.openInventory(inventory)
     }
 
-    fun openCategory(player: Player, categoryId: String) {
+    fun openCategory(player: Player, categoryId: String, playerRole: String? = null) {
         val category = categories.find { it.id == categoryId }
         if (category == null) {
             MessageUtil.send(player, "&cCategory not found")
@@ -108,7 +135,14 @@ class ShopManager(
             MessageUtil.colorize(category.displayName)
         )
 
-        for (shopItem in category.items) {
+        // T022: Filter items by player role
+        val visibleItems = if (playerRole != null) {
+            category.getItemsForRole(playerRole)
+        } else {
+            category.items
+        }
+
+        for (shopItem in visibleItems) {
             if (shopItem.slot in 0..53) {
                 val item = ItemBuilder(shopItem.material)
                     .displayName(shopItem.displayName)

@@ -437,3 +437,10 @@ hideandseek.stats.reset   # 統計リセット
     ├── reload          - 設定リロード
     └── debug           - デバッグモード
 ```
+
+## Active Technologies
+- Kotlin 2.2.21 / Paper API 1.21.5 + Paper API、Vault API、Kotlin stdlib-jdk8 (003-seeker-shop)
+- YAMLファイル（設定）、メモリ内管理（アクティブ効果） (003-seeker-shop)
+
+## Recent Changes
+- 003-seeker-shop: Added Kotlin 2.2.21 / Paper API 1.21.5 + Paper API、Vault API、Kotlin stdlib-jdk8

@@ -16,11 +16,89 @@ shop:
 
   # Category Configuration
   categories:
+    # Seeker Items Category
+    seeker-items:
+      display-name: "&cSeeker Tools"
+      icon: ENDER_EYE
+      slot: 11
+      role-filter: "SEEKER"
+      description:
+        - "&7Special items to help find hiders"
+
+      # Items in this category
+      items:
+        vision-enhancer:
+          material: ENDER_EYE
+          display-name: "&b視界拡大"
+          slot: 10
+          price: 300
+          lore:
+            - "&730秒間視界が拡大します"
+            - "&7(暗視効果 + 描画距離32チャンク)"
+            - ""
+            - "&e価格: &6300 coins"
+          effect-type: "VISION"
+          effect-duration: 30
+          effect-intensity: 1.0
+          role-filter: "SEEKER"
+          usage-restriction: "SEEK_PHASE_ONLY"
+
+        glow-detector:
+          material: GLOWSTONE_DUST
+          display-name: "&e偽装ブロック発光"
+          slot: 11
+          price: 500
+          lore:
+            - "&715秒間偽装ブロックが発光します"
+            - "&7(パーティクル表示)"
+            - ""
+            - "&e価格: &6500 coins"
+            - "&c購入制限: 3回/ゲーム"
+          effect-type: "GLOW"
+          effect-duration: 15
+          effect-intensity: 1.0
+          role-filter: "SEEKER"
+          max-purchases: 3
+          usage-restriction: "SEEK_PHASE_ONLY"
+
+        speed-boost:
+          material: SUGAR
+          display-name: "&aスピードブースト"
+          slot: 12
+          price: 200
+          lore:
+            - "&730秒間移動速度が上昇します"
+            - "&7(Speed II効果)"
+            - ""
+            - "&e価格: &6200 coins"
+          effect-type: "SPEED"
+          effect-duration: 30
+          effect-intensity: 1.0
+          role-filter: "SEEKER"
+          usage-restriction: "SEEK_PHASE_ONLY"
+
+        reach-extender:
+          material: STICK
+          display-name: "&d攻撃範囲拡大"
+          slot: 13
+          price: 250
+          lore:
+            - "&730秒間攻撃範囲が1.5倍になります"
+            - "&7(4.5 → 6.75ブロック)"
+            - ""
+            - "&e価格: &6250 coins"
+          effect-type: "REACH"
+          effect-duration: 30
+          effect-intensity: 1.5
+          role-filter: "SEEKER"
+          usage-restriction: "SEEK_PHASE_ONLY"
+
     # Disguise Blocks Category
     disguise-blocks:
       display-name: "&eDisguise Blocks"
       icon: GRASS_BLOCK
       slot: 10
+      role-filter: "HIDER"
       description:
         - "&7Select a block to disguise as"
 
@@ -88,6 +166,47 @@ shop:
           lore:
             - "&7Click to disguise as this block"
             - "&aFree!"
+
+    # Taunt Items Category (Hider only)
+    taunt-items:
+      display-name: "&d挑発アイテム"
+      icon: SNOWBALL
+      slot: 12
+      role-filter: "HIDER"
+      description:
+        - "&7Use these to taunt seekers"
+        - "&7and earn bonus points!"
+
+      items:
+        snowball:
+          material: SNOWBALL
+          display-name: "&f雪玉"
+          slot: 10
+          price: 0
+          lore:
+            - "&7投げてシーカーを挑発！"
+            - "&7ボーナス: &e+50ポイント"
+            - ""
+            - "&aFree!"
+            - "&c注意: 位置がバレやすくなります"
+          taunt-type: "SNOWBALL"
+          taunt-bonus: 50
+          role-filter: "HIDER"
+
+        firework:
+          material: FIREWORK_ROCKET
+          display-name: "&c花火"
+          slot: 11
+          price: 0
+          lore:
+            - "&7打ち上げてシーカーを挑発！"
+            - "&7ボーナス: &e+100ポイント"
+            - ""
+            - "&aFree!"
+            - "&c注意: 非常に目立ちます"
+          taunt-type: "FIREWORK"
+          taunt-bonus: 100
+          role-filter: "HIDER"
 
   # Navigation Items
   navigation:

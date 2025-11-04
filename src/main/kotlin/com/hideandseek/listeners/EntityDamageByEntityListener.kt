@@ -13,7 +13,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent
 
 class EntityDamageByEntityListener(
     private val disguiseManager: DisguiseManager,
-    private val gameManager: GameManager
+    private val gameManager: GameManager,
+    private val pointManager: com.hideandseek.points.PointManager?,
+    private val plugin: org.bukkit.plugin.Plugin
 ) : Listener {
 
     @EventHandler
@@ -47,10 +49,20 @@ class EntityDamageByEntityListener(
         victimData.capture()
         attackerData.recordCapture()
 
+        // Handle point stealing
+        val stealPercentage = plugin.config.getDouble("points.capture-steal-percentage", 0.5)
+        val pointsStolen = pointManager?.handleCapture(attacker.uniqueId, victim.uniqueId, stealPercentage) ?: 0
+
         victim.gameMode = GameMode.SPECTATOR
 
         MessageUtil.send(attacker, "&aYou captured ${victim.name}!")
+        if (pointsStolen > 0) {
+            MessageUtil.send(attacker, "&e+${pointsStolen} ポイント獲得 &7(${victim.name}のポイントを奪取)")
+        }
         MessageUtil.send(victim, "&cYou were captured by ${attacker.name}!")
+        if (pointsStolen > 0) {
+            MessageUtil.send(victim, "&c-${pointsStolen} ポイント &7(${attacker.name}に奪われた)")
+        }
 
         game.players.values.forEach { playerData ->
             Bukkit.getPlayer(playerData.uuid)?.let { player ->

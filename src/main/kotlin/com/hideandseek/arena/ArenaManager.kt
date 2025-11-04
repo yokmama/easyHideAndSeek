@@ -176,4 +176,16 @@ class ArenaManager(
     fun arenaExists(name: String): Boolean {
         return arenas.containsKey(name)
     }
+
+    /**
+     * Get a random arena
+     *
+     * @return Random arena or null if no arenas exist
+     */
+    fun getRandomArena(): Arena? {
+        if (arenas.isEmpty()) {
+            return null
+        }
+        return arenas.values.random()
+    }
 }
