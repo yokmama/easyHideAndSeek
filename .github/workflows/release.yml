@@ -54,24 +54,30 @@ jobs:
       with:
         modrinth-id: ${{ secrets.MODRINTH_PROJECT_ID }}
         modrinth-token: ${{ secrets.MODRINTH_PAT }}
-        
+
         files: ${{ steps.jar.outputs.JAR_PATH }}
         name: "Easy Hide and Seek v${{ steps.version.outputs.VERSION }}"
         version: ${{ steps.version.outputs.VERSION }}
         version-type: release
-        
+
         loaders: |
           spigot
           paper
-          
+
         game-versions: |
           1.21.5
-          
-        dependencies: |
-          spigot-api | suggests
-          paper-api | suggests
-          
+          1.21.4
+          1.21.3
+          1.21.2
+          1.21.1
+          1.21
+
+        # New dependency format for mc-publish v3.3
+        # Format: name@version-range(dependency-type){platform:id}
+        # For Vault (optional dependency, no specific Modrinth ID)
+        dependencies: ""
+
         changelog-file: CHANGELOG.md
-        
+
         retry-attempts: 2
         retry-delay: 10000
