@@ -69,4 +69,8 @@ tasks.processResources {
     filesMatching("plugin.yml") {
         expand(props)
     }
+    // Ensure UTF-8 encoding for all properties files (i18n support)
+    filesMatching("**/*.properties") {
+        filteringCharset = "UTF-8"
+    }
 }

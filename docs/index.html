@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hide and Seek - Player Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .lang-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 25px;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .lang-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 1.3em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .role-card {
+            display: inline-block;
+            width: 48%;
+            margin: 1%;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            vertical-align: top;
+        }
+
+        .hider-card {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+
+        .seeker-card {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .shop-item {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            transition: transform 0.2s;
+        }
+
+        .shop-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .item-name {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+
+        .item-price {
+            color: #28a745;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+
+        .command {
+            background: #2d3748;
+            color: #68d391;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        ul {
+            margin-left: 25px;
+            margin-top: 10px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .lang-ja { display: block; }
+        .lang-en { display: none; }
+
+        @media (max-width: 768px) {
+            .role-card {
+                width: 100%;
+                display: block;
+                margin: 10px 0;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .lang-toggle {
+                position: static;
+                display: block;
+                margin: 10px auto;
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="lang-toggle" onclick="toggleLanguage()">
+                <span class="lang-ja">English</span>
+                <span class="lang-en">日本語</span>
+            </button>
+            <h1>Hide and Seek</h1>
+            <p class="subtitle lang-ja">かくれんぼゲーム - プレイヤーガイド</p>
+            <p class="subtitle lang-en">Hide and Seek Game - Player Guide</p>
+        </header>
+
+        <div class="content">
+            <!-- Game Overview -->
+            <div class="section">
+                <h2 class="lang-ja">ゲーム概要</h2>
+                <h2 class="lang-en">Game Overview</h2>
+
+                <p class="lang-ja">
+                    <strong>Hide and Seek</strong>は、Minecraft内で楽しめるかくれんぼゲームです。
+                    隠れる側（ハイダー）は鬼（シーカー）から逃れ、鬼は制限時間内にすべてのハイダーを見つけ出すことを目指します。
+                </p>
+                <p class="lang-en">
+                    <strong>Hide and Seek</strong> is an exciting hide-and-seek game within Minecraft.
+                    Hiders try to escape from Seekers, while Seekers aim to find all Hiders within the time limit.
+                </p>
+
+                <div class="info-box">
+                    <h3 class="lang-ja">基本情報</h3>
+                    <h3 class="lang-en">Basic Information</h3>
+                    <ul class="lang-ja">
+                        <li><strong>プレイ人数:</strong> 2-30人</li>
+                        <li><strong>推奨人数:</strong> 13人（鬼3人、ハイダー10人）</li>
+                        <li><strong>準備時間:</strong> 30秒</li>
+                        <li><strong>ゲーム時間:</strong> 10分</li>
+                        <li><strong>対象年齢:</strong> 全年齢</li>
+                    </ul>
+                    <ul class="lang-en">
+                        <li><strong>Players:</strong> 2-30 players</li>
+                        <li><strong>Recommended:</strong> 13 players (3 Seekers, 10 Hiders)</li>
+                        <li><strong>Preparation Time:</strong> 30 seconds</li>
+                        <li><strong>Game Duration:</strong> 10 minutes</li>
+                        <li><strong>Age Rating:</strong> All ages</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Roles -->
+            <div class="section">
+                <h2 class="lang-ja">役割紹介</h2>
+                <h2 class="lang-en">Roles</h2>
+
+                <div class="role-card hider-card">
+                    <h3 class="lang-ja">ハイダー（隠れる側）</h3>
+                    <h3 class="lang-en">Hider (Hiding Team)</h3>
+                    <p class="lang-ja">
+                        ブロックに偽装して鬼から隠れましょう！
+                        移動すると偽装が解除されるので注意が必要です。
+                        見逃しアイテムを使えば、一度だけ捕獲を回避できます。
+                    </p>
+                    <p class="lang-en">
+                        Disguise as a block and hide from Seekers!
+                        Moving will break your disguise, so be careful.
+                        Use Escape Pass to avoid capture once.
+                    </p>
+                </div>
+
+                <div class="role-card seeker-card">
+                    <h3 class="lang-ja">シーカー（鬼）</h3>
+                    <h3 class="lang-en">Seeker (Seeking Team)</h3>
+                    <p class="lang-ja">
+                        ハイダーを見つけて攻撃で捕獲しましょう！
+                        怪しいブロックを攻撃すると、隠れているハイダーを発見できます。
+                        ショップアイテムを活用して効率的に探索しましょう。
+                    </p>
+                    <p class="lang-en">
+                        Find and capture Hiders by attacking them!
+                        Attack suspicious blocks to discover hidden Hiders.
+                        Use shop items to search more efficiently.
+                    </p>
+                </div>
+            </div>
+
+            <!-- How to Play -->
+            <div class="section">
+                <h2 class="lang-ja">遊び方</h2>
+                <h2 class="lang-en">How to Play</h2>
+
+                <h3 class="lang-ja">1. 準備フェーズ（30秒）</h3>
+                <h3 class="lang-en">1. Preparation Phase (30 seconds)</h3>
+                <p class="lang-ja">
+                    ハイダーは隠れる場所を探し、ブロックに偽装します。
+                    シーカーは待機エリアで待機し、盲目状態になります。
+                </p>
+                <p class="lang-en">
+                    Hiders find hiding spots and disguise as blocks.
+                    Seekers wait in the waiting area with blindness effect.
+                </p>
+
+                <h3 class="lang-ja">2. 探索フェーズ（10分）</h3>
+                <h3 class="lang-en">2. Seeking Phase (10 minutes)</h3>
+                <p class="lang-ja">
+                    シーカーがハイダーを探します。
+                    ハイダーは自由に動き回れますが、偽装中に移動すると偽装が解除されます。
+                </p>
+                <p class="lang-en">
+                    Seekers search for Hiders.
+                    Hiders can move freely, but moving breaks their disguise.
+                </p>
+
+                <h3 class="lang-ja">3. 勝利条件</h3>
+                <h3 class="lang-en">3. Victory Conditions</h3>
+                <ul class="lang-ja">
+                    <li><strong>シーカーの勝利:</strong> 全ハイダーを捕獲</li>
+                    <li><strong>ハイダーの勝利:</strong> 時間切れまで1人でも生き残る</li>
+                </ul>
+                <ul class="lang-en">
+                    <li><strong>Seekers Win:</strong> Capture all Hiders</li>
+                    <li><strong>Hiders Win:</strong> At least one Hider survives until time runs out</li>
+                </ul>
+            </div>
+
+            <!-- Shop System -->
+            <div class="section">
+                <h2 class="lang-ja">ショップシステム</h2>
+                <h2 class="lang-en">Shop System</h2>
+
+                <p class="lang-ja">
+                    ゲーム中に <code class="command">/hs shop</code> コマンドでショップを開けます。
+                    役割によって購入できるアイテムが異なります。
+                </p>
+                <p class="lang-en">
+                    Use <code class="command">/hs shop</code> command during the game to open the shop.
+                    Available items differ based on your role.
+                </p>
+
+                <h3 class="lang-ja">ハイダー用アイテム</h3>
+                <h3 class="lang-en">Hider Items</h3>
+
+                <div class="shop-item">
+                    <div class="item-name lang-ja">偽装ブロック選択</div>
+                    <div class="item-name lang-en">Disguise Block Selection</div>
+                    <div class="item-price lang-ja">無料</div>
+                    <div class="item-price lang-en">FREE</div>
+                    <p class="lang-ja">
+                        石、土、木などのブロックに偽装できます。
+                        選択すると即座に現在地に偽装ブロックが設置され、透明化されます。
+                        移動すると偽装が解除されます。
+                    </p>
+                    <p class="lang-en">
+                        Disguise as stone, dirt, wood, and other blocks.
+                        Upon selection, a disguise block is placed at your location and you become invisible.
+                        Moving breaks the disguise.
+                    </p>
+                </div>
+
+                <div class="shop-item">
+                    <div class="item-name lang-ja">見逃しアイテム</div>
+                    <div class="item-name lang-en">Escape Pass</div>
+                    <div class="item-price">500 <span class="lang-ja">コイン</span><span class="lang-en">Coins</span></div>
+                    <p class="lang-ja">
+                        攻撃された時に自動発動し、5秒間の無敵時間を得られます。
+                        1ゲームにつき1個まで購入可能です。
+                    </p>
+                    <p class="lang-en">
+                        Automatically activates when attacked, granting 5 seconds of invincibility.
+                        Can be purchased once per game.
+                    </p>
+                </div>
+
+                <h3 class="lang-ja">シーカー用アイテム</h3>
+                <h3 class="lang-en">Seeker Items</h3>
+
+                <div class="shop-item">
+                    <div class="item-name lang-ja">コンパス</div>
+                    <div class="item-name lang-en">Tracking Compass</div>
+                    <div class="item-price">200 <span class="lang-ja">コイン</span><span class="lang-en">Coins</span></div>
+                    <p class="lang-ja">
+                        最も近いハイダーの方向を示します。
+                        使用後30秒間有効です。
+                    </p>
+                    <p class="lang-en">
+                        Points to the nearest Hider.
+                        Effective for 30 seconds after use.
+                    </p>
+                </div>
+
+                <div class="shop-item">
+                    <div class="item-name lang-ja">スピードブースト</div>
+                    <div class="item-name lang-en">Speed Boost</div>
+                    <div class="item-price">300 <span class="lang-ja">コイン</span><span class="lang-en">Coins</span></div>
+                    <p class="lang-ja">
+                        30秒間移動速度が上昇します。
+                        広いエリアを素早く探索できます。
+                    </p>
+                    <p class="lang-en">
+                        Increases movement speed for 30 seconds.
+                        Quickly search large areas.
+                    </p>
+                </div>
+
+                <div class="shop-item">
+                    <div class="item-name lang-ja">エリアスキャン</div>
+                    <div class="item-name lang-en">Area Scan</div>
+                    <div class="item-price">500 <span class="lang-ja">コイン</span><span class="lang-en">Coins</span></div>
+                    <p class="lang-ja">
+                        10ブロック範囲内のハイダー数を表示します。
+                        効率的にハイダーを絞り込めます。
+                    </p>
+                    <p class="lang-en">
+                        Displays the number of Hiders within 10 blocks.
+                        Efficiently narrow down Hider locations.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Rewards -->
+            <div class="section">
+                <h2 class="lang-ja">報酬システム</h2>
+                <h2 class="lang-en">Reward System</h2>
+
+                <table>
+                    <tr>
+                        <th class="lang-ja">報酬タイプ</th>
+                        <th class="lang-en">Reward Type</th>
+                        <th class="lang-ja">金額</th>
+                        <th class="lang-en">Amount</th>
+                    </tr>
+                    <tr>
+                        <td class="lang-ja">勝利報酬</td>
+                        <td class="lang-en">Victory Reward</td>
+                        <td>1,000 <span class="lang-ja">コイン</span><span class="lang-en">Coins</span></td>
+                    </tr>
+                    <tr>
+                        <td class="lang-ja">捕獲ごとの報酬（シーカー）</td>
+                        <td class="lang-en">Per Capture (Seeker)</td>
+                        <td>200 <span class="lang-ja">コイン</span><span class="lang-en">Coins</span></td>
+                    </tr>
+                    <tr>
+                        <td class="lang-ja">参加報酬</td>
+                        <td class="lang-en">Participation Reward</td>
+                        <td>100 <span class="lang-ja">コイン</span><span class="lang-en">Coins</span></td>
+                    </tr>
+                </table>
+
+                <div class="warning">
+                    <strong class="lang-ja">注意:</strong>
+                    <strong class="lang-en">Note:</strong>
+                    <span class="lang-ja">
+                        報酬を受け取るにはVaultと経済プラグインが必要です。
+                        サーバー管理者に確認してください。
+                    </span>
+                    <span class="lang-en">
+                        Vault and an economy plugin are required to receive rewards.
+                        Please check with your server administrator.
+                    </span>
+                </div>
+            </div>
+
+            <!-- Commands -->
+            <div class="section">
+                <h2 class="lang-ja">コマンド一覧</h2>
+                <h2 class="lang-en">Commands</h2>
+
+                <table>
+                    <tr>
+                        <th class="lang-ja">コマンド</th>
+                        <th class="lang-en">Command</th>
+                        <th class="lang-ja">説明</th>
+                        <th class="lang-en">Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>/hs join</code></td>
+                        <td class="lang-ja">ゲームに参加</td>
+                        <td class="lang-en">Join the game</td>
+                    </tr>
+                    <tr>
+                        <td><code>/hs leave</code></td>
+                        <td class="lang-ja">ゲームから退出</td>
+                        <td class="lang-en">Leave the game</td>
+                    </tr>
+                    <tr>
+                        <td><code>/hs shop</code></td>
+                        <td class="lang-ja">ショップを開く</td>
+                        <td class="lang-en">Open shop</td>
+                    </tr>
+                    <tr>
+                        <td><code>/hs stats</code></td>
+                        <td class="lang-ja">統計を表示</td>
+                        <td class="lang-en">View statistics</td>
+                    </tr>
+                    <tr>
+                        <td><code>/hs balance</code></td>
+                        <td class="lang-ja">所持金を確認</td>
+                        <td class="lang-en">Check balance</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Tips -->
+            <div class="section">
+                <h2 class="lang-ja">攻略のコツ</h2>
+                <h2 class="lang-en">Tips & Tricks</h2>
+
+                <h3 class="lang-ja">ハイダー向け</h3>
+                <h3 class="lang-en">For Hiders</h3>
+                <ul class="lang-ja">
+                    <li>周囲の環境に溶け込むブロックを選びましょう</li>
+                    <li>移動するとバレやすいので、慎重に場所を選びましょう</li>
+                    <li>見逃しアイテムは緊急時のために取っておきましょう</li>
+                    <li>シーカーが近づいてきたら、偽装を解除して逃げるのも戦略です</li>
+                    <li>角や影になる場所は見つかりにくい傾向があります</li>
+                </ul>
+                <ul class="lang-en">
+                    <li>Choose blocks that blend in with the surroundings</li>
+                    <li>Moving makes you easier to spot, so choose your location carefully</li>
+                    <li>Save your Escape Pass for emergencies</li>
+                    <li>Breaking disguise and running can be a valid strategy when Seekers approach</li>
+                    <li>Corners and shadowy spots are harder to find</li>
+                </ul>
+
+                <h3 class="lang-ja">シーカー向け</h3>
+                <h3 class="lang-en">For Seekers</h3>
+                <ul class="lang-ja">
+                    <li>不自然に配置されたブロックを探しましょう</li>
+                    <li>人気の隠れ場所を優先的にチェックしましょう</li>
+                    <li>コンパスを活用して効率的に探索しましょう</li>
+                    <li>複数人で協力して探すとより効果的です</li>
+                    <li>時間が限られているので、計画的に動きましょう</li>
+                </ul>
+                <ul class="lang-en">
+                    <li>Look for unnaturally placed blocks</li>
+                    <li>Check popular hiding spots first</li>
+                    <li>Use the compass to search efficiently</li>
+                    <li>Cooperating with other Seekers is more effective</li>
+                    <li>Time is limited, so plan your movements</li>
+                </ul>
+            </div>
+
+            <!-- FAQ -->
+            <div class="section">
+                <h2 class="lang-ja">よくある質問</h2>
+                <h2 class="lang-en">FAQ</h2>
+
+                <h3 class="lang-ja">Q: 偽装中に攻撃されたらどうなりますか？</h3>
+                <h3 class="lang-en">Q: What happens if I'm attacked while disguised?</h3>
+                <p class="lang-ja">
+                    A: 見逃しアイテムを持っている場合は自動発動し、5秒間無敵になります。
+                    持っていない場合は即座に捕獲され、観戦モードになります。
+                </p>
+                <p class="lang-en">
+                    A: If you have an Escape Pass, it activates automatically and grants 5 seconds of invincibility.
+                    Without it, you're immediately captured and become a spectator.
+                </p>
+
+                <h3 class="lang-ja">Q: 偽装を何度でも変更できますか？</h3>
+                <h3 class="lang-en">Q: Can I change my disguise multiple times?</h3>
+                <p class="lang-ja">
+                    A: はい、ショップから何度でもブロックを選択できます。
+                    ただし、移動すると偽装が解除されるので再度選び直す必要があります。
+                </p>
+                <p class="lang-en">
+                    A: Yes, you can select blocks from the shop as many times as you want.
+                    However, moving breaks your disguise, so you'll need to select again.
+                </p>
+
+                <h3 class="lang-ja">Q: コインはどこで手に入りますか？</h3>
+                <h3 class="lang-en">Q: Where can I get coins?</h3>
+                <p class="lang-ja">
+                    A: ゲームに参加するだけで参加報酬がもらえます。
+                    勝利したり、シーカーとして捕獲することでさらにコインを獲得できます。
+                </p>
+                <p class="lang-en">
+                    A: You receive participation rewards just by playing.
+                    Winning games or capturing players as a Seeker earns more coins.
+                </p>
+
+                <h3 class="lang-ja">Q: ゲーム中に退出したらどうなりますか？</h3>
+                <h3 class="lang-en">Q: What happens if I leave during a game?</h3>
+                <p class="lang-ja">
+                    A: ゲームから自動的に退出し、報酬は受け取れません。
+                    他のプレイヤーに迷惑がかかるので、なるべく最後までプレイしましょう。
+                </p>
+                <p class="lang-en">
+                    A: You automatically leave the game and won't receive rewards.
+                    Please try to play until the end to avoid inconveniencing other players.
+                </p>
+            </div>
+        </div>
+
+        <footer>
+            <p class="lang-ja">Hide and Seek Plugin - 楽しいかくれんぼライフを！</p>
+            <p class="lang-en">Hide and Seek Plugin - Enjoy your hide-and-seek adventure!</p>
+        </footer>
+    </div>
+
+    <script>
+        let currentLang = 'ja';
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'ja' ? 'en' : 'ja';
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            // Hide all language elements
+            document.querySelectorAll('.lang-ja, .lang-en').forEach(el => {
+                el.style.display = 'none';
+            });
+
+            // Show elements for current language
+            const selector = currentLang === 'ja' ? '.lang-ja' : '.lang-en';
+            document.querySelectorAll(selector).forEach(el => {
+                // Determine display type based on element
+                let displayType = 'block';
+                if (el.tagName === 'SPAN' || el.classList.contains('subtitle')) {
+                    displayType = 'inline';
+                } else if (el.tagName === 'UL') {
+                    displayType = 'block';
+                } else if (el.tagName === 'LI') {
+                    displayType = 'list-item';
+                } else if (el.tagName === 'TD' || el.tagName === 'TH') {
+                    displayType = 'table-cell';
+                }
+                el.style.display = displayType;
+            });
+
+            // Update HTML lang attribute
+            document.documentElement.lang = currentLang;
+
+            // Save preference
+            localStorage.setItem('hideandseek-lang', currentLang);
+        }
+
+        // Load saved language preference
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('hideandseek-lang');
+            if (savedLang) {
+                currentLang = savedLang;
+                updateLanguage();
+            }
+        });
+    </script>
+</body>
+</html>
