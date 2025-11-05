@@ -7,7 +7,10 @@ data class PlayerGameData(
     var role: PlayerRole,
     var isCaptured: Boolean = false,
     var captureCount: Int = 0,
-    var backup: PlayerBackup? = null
+    var backup: PlayerBackup? = null,
+    val originalRole: PlayerRole = role,  // Store original role at game start
+    var hiderPoints: Int = 0,              // Points earned as Hider
+    var seekerPoints: Int = 0              // Points earned as Seeker
 ) {
     fun capture() {
         require(role == PlayerRole.HIDER) { "Only hiders can be captured" }

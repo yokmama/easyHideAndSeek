@@ -2,7 +2,6 @@ package com.hideandseek.config
 
 import com.hideandseek.arena.Arena
 import com.hideandseek.arena.ArenaBoundaries
-import com.hideandseek.arena.ArenaSpawns
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.configuration.ConfigurationSection
@@ -56,10 +55,6 @@ class ArenaConfig(private val config: FileConfiguration) {
         config.set("$path.boundaries.center.y", center.y)
         config.set("$path.boundaries.center.z", center.z)
         config.set("$path.boundaries.size", arena.boundaries.size)
-
-        // Save spawns
-        serializeLocationWithRotation("$path.spawn-seeker", arena.spawns.seeker)
-        serializeLocationWithRotation("$path.spawn-hider", arena.spawns.hider)
     }
 
     /**
@@ -88,11 +83,7 @@ class ArenaConfig(private val config: FileConfiguration) {
         val pos2 = deserializeLocation(boundariesSection, "pos2", world)
         val boundaries = ArenaBoundaries(pos1, pos2)
 
-        val seekerSpawn = deserializeLocationWithRotation(section, "spawn-seeker", world)
-        val hiderSpawn = deserializeLocationWithRotation(section, "spawn-hider", world)
-        val spawns = ArenaSpawns(seekerSpawn, hiderSpawn)
-
-        return Arena(name, displayName, world, boundaries, spawns)
+        return Arena(name, displayName, world, boundaries)
     }
 
     /**
@@ -102,17 +93,6 @@ class ArenaConfig(private val config: FileConfiguration) {
         config.set("$path.x", loc.x)
         config.set("$path.y", loc.y)
         config.set("$path.z", loc.z)
-    }
-
-    /**
-     * Serialize location with rotation to config
-     */
-    private fun serializeLocationWithRotation(path: String, loc: Location) {
-        config.set("$path.x", loc.x)
-        config.set("$path.y", loc.y)
-        config.set("$path.z", loc.z)
-        config.set("$path.yaw", loc.yaw)
-        config.set("$path.pitch", loc.pitch)
     }
 
     /**
@@ -128,18 +108,5 @@ class ArenaConfig(private val config: FileConfiguration) {
             locSection.getDouble("y"),
             locSection.getDouble("z")
         )
-    }
-
-    /**
-     * Deserialize location with rotation from config
-     */
-    private fun deserializeLocationWithRotation(section: ConfigurationSection, key: String, world: org.bukkit.World): Location {
-        val x = section.getDouble("$key.x")
-        val y = section.getDouble("$key.y")
-        val z = section.getDouble("$key.z")
-        val yaw = section.getDouble("$key.yaw").toFloat()
-        val pitch = section.getDouble("$key.pitch").toFloat()
-
-        return Location(world, x, y, z, yaw, pitch)
     }
 }

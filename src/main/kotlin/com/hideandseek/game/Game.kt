@@ -10,7 +10,10 @@ data class Game(
     val players: MutableMap<UUID, PlayerGameData>,
     val startTime: Long,
     var phaseStartTime: Long,
-    var worldBorderBackup: WorldBorderBackup? = null
+    var worldBorderBackup: WorldBorderBackup? = null,
+    var autoRestartTaskId: Int? = null,  // Auto-restart timer task ID
+    var autoRestartStartTime: Long = 0L,  // When auto-restart countdown started
+    var nightSkipTaskId: Int? = null  // Night skip task ID
 ) {
     fun getSeekers(): List<UUID> {
         return players.filter { it.value.role == PlayerRole.SEEKER }.keys.toList()

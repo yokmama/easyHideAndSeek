@@ -166,4 +166,125 @@ class ConfigManager(private val plugin: Plugin) {
     fun getParticipationReward(): Double {
         return config.getDouble("economy.rewards.participation", 100.0)
     }
+
+    // ========== Auto-Restart Configuration ==========
+
+    /**
+     * Check if auto-restart is enabled
+     */
+    fun isAutoRestartEnabled(): Boolean {
+        return config.getBoolean("auto-restart.enabled", true)
+    }
+
+    /**
+     * Get post-game countdown time in seconds
+     */
+    fun getPostGameCountdown(): Int {
+        return config.getInt("auto-restart.post-game-countdown", 20).coerceIn(5, 300)
+    }
+
+    /**
+     * Check if force-join-all-players is enabled
+     */
+    fun isForceJoinAllPlayers(): Boolean {
+        return config.getBoolean("auto-restart.force-join-all-players", true)
+    }
+
+    /**
+     * Get broadcast interval for countdown messages in seconds
+     */
+    fun getBroadcastInterval(): Int {
+        return config.getInt("auto-restart.broadcast-interval", 5)
+    }
+
+    // ========== Spectator Configuration ==========
+
+    /**
+     * Check if spectator mode is enabled
+     */
+    fun isSpectatorEnabled(): Boolean {
+        return config.getBoolean("spectator.enabled", true)
+    }
+
+    /**
+     * Check if spectators can join during game as hiders
+     */
+    fun isAllowJoinDuringGame(): Boolean {
+        return config.getBoolean("spectator.allow-join-during-game", true)
+    }
+
+    /**
+     * Check if spectator state should persist
+     */
+    fun isPersistSpectatorState(): Boolean {
+        return config.getBoolean("spectator.persist-state", true)
+    }
+
+    /**
+     * Get spectator flight speed multiplier
+     */
+    fun getSpectatorFlightSpeed(): Double {
+        return config.getDouble("spectator.flight-speed", 1.5)
+    }
+
+    /**
+     * Check if seeker count should be shown on spectator scoreboard
+     */
+    fun isShowSeekerCount(): Boolean {
+        return config.getBoolean("spectator.scoreboard.show-seeker-count", true)
+    }
+
+    /**
+     * Check if hider count should be shown on spectator scoreboard
+     */
+    fun isShowHiderCount(): Boolean {
+        return config.getBoolean("spectator.scoreboard.show-hider-count", true)
+    }
+
+    /**
+     * Get number of top players to show on spectator scoreboard
+     */
+    fun getShowTopPlayers(): Int {
+        return config.getInt("spectator.scoreboard.show-top-players", 3).coerceIn(0, 10)
+    }
+
+    /**
+     * Check if team lists should be shown on spectator scoreboard
+     */
+    fun isShowTeamLists(): Boolean {
+        return config.getBoolean("spectator.scoreboard.show-team-lists", true)
+    }
+
+    /**
+     * Get spectator scoreboard update interval in seconds
+     */
+    fun getScoreboardUpdateInterval(): Int {
+        return config.getInt("spectator.scoreboard.update-interval", 2).coerceAtLeast(1)
+    }
+
+    // ========== Capture Configuration ==========
+
+    /**
+     * Get capture mode: "SPECTATOR" or "INFECTION"
+     *
+     * SPECTATOR: Captured hiders become spectators (original mode)
+     * INFECTION: Captured hiders become seekers (infection mode)
+     */
+    fun getCaptureMode(): CaptureMode {
+        val modeString = config.getString("capture.mode", "INFECTION")?.uppercase() ?: "INFECTION"
+        return try {
+            CaptureMode.valueOf(modeString)
+        } catch (e: IllegalArgumentException) {
+            plugin.logger.warning("Invalid capture mode '$modeString', using INFECTION")
+            CaptureMode.INFECTION
+        }
+    }
+}
+
+/**
+ * Enum for capture mode configuration
+ */
+enum class CaptureMode {
+    SPECTATOR,  // Captured hiders become spectators
+    INFECTION   // Captured hiders become seekers (infection mode)
 }

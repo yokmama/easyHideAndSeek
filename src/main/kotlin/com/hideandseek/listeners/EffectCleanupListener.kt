@@ -14,9 +14,11 @@ import java.util.logging.Logger
  * - Remove effects when players quit
  * - Clear effects when games end (integration point for future game events)
  * - Manage effects during state transitions (e.g., capture)
+ * - Handle auto-restart timer cancellation on player logout
  */
 class EffectCleanupListener(
     private val effectManager: EffectManager,
+    private val gameManager: com.hideandseek.game.GameManager,
     private val logger: Logger
 ) : Listener {
 
@@ -31,6 +33,18 @@ class EffectCleanupListener(
 
         if (removedCount > 0) {
             logger.fine("Removed $removedCount effects from ${player.name} on quit")
+        }
+
+        // Check if player logout affects auto-restart timer
+        val game = gameManager.activeGame
+        if (game != null && game.phase == com.hideandseek.game.GamePhase.POST_GAME) {
+            // Check if remaining player count is below minimum
+            val activePlayerCount = gameManager.getActivePlayerCount()
+            val minPlayers = gameManager.configManager.getMinPlayers()
+
+            if (activePlayerCount < minPlayers) {
+                logger.info("Player count dropped below minimum during POST_GAME phase - timer will continue but game won't start")
+            }
         }
     }
 

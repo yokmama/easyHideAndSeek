@@ -52,9 +52,6 @@ class BlockBreakListener(
 
         plugin.logger.info("[BlockBreak] Player ${player.name} is in game - processing restoration")
 
-        // Cancel the event to prevent item drops
-        event.isCancelled = true
-
         // Track the broken block for restoration BEFORE changing it
         // DisguiseManager check is handled internally in trackBrokenBlock()
         val tracked = blockRestorationManager.trackBrokenBlock(block, game.id)
@@ -62,6 +59,9 @@ class BlockBreakListener(
         plugin.logger.info("[BlockBreak] Block tracked: $tracked")
 
         if (tracked) {
+            // Cancel the event to prevent item drops
+            event.isCancelled = true
+
             // Manually break the block (set to air) without dropping items
             block.type = org.bukkit.Material.AIR
 
@@ -70,7 +70,9 @@ class BlockBreakListener(
 
             plugin.logger.info("[BlockBreak] Block set to AIR, will restore in 5 seconds")
         } else {
-            plugin.logger.warning("[BlockBreak] Block was NOT tracked (might be disguise block)")
+            // Not tracked (might be disguise block or other reason)
+            // Allow normal breaking by not cancelling the event
+            plugin.logger.info("[BlockBreak] Block was NOT tracked - allowing normal break")
         }
     }
 }

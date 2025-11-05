@@ -8,15 +8,15 @@ import org.bukkit.World
  *
  * Contains all spatial information needed to run a game:
  * - Play area boundaries
- * - Spawn points for each role
  * - World reference
+ *
+ * Players spawn randomly within the arena boundaries
  */
 data class Arena(
     val name: String,          // Unique identifier (used in commands)
     val displayName: String,   // Human-readable name
     val world: World,          // Bukkit World reference
-    val boundaries: ArenaBoundaries,  // Play area definition
-    val spawns: ArenaSpawns    // Player spawn locations
+    val boundaries: ArenaBoundaries  // Play area definition
 ) {
     /**
      * Check if a location is within arena boundaries

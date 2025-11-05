@@ -11,6 +11,26 @@ game:
   seek-time: 600           # Seek time in seconds - default 10 minutes
   seeker-ratio: 0.23       # Seeker ratio (23%)
 
+# Auto-Restart Configuration
+auto-restart:
+  enabled: true                    # Enable auto-restart feature
+  post-game-countdown: 20          # Countdown seconds after game ends (5-300)
+  force-join-all-players: true     # Auto-join non-spectators
+  broadcast-interval: 5            # Seconds between countdown messages
+
+# Spectator Mode Configuration
+spectator:
+  enabled: true                    # Enable spectator mode
+  allow-join-during-game: true     # Allow spectator → hider mid-game
+  persist-state: true              # Save state to spectators.yml
+  flight-speed: 1.5                # Flight speed multiplier
+  scoreboard:
+    show-seeker-count: true
+    show-hider-count: true
+    show-top-players: 3            # Number of top players to show
+    show-team-lists: true
+    update-interval: 2             # Scoreboard update interval (seconds)
+
 # Point System Configuration
 points:
   enabled: true
@@ -20,6 +40,7 @@ points:
   accumulation-interval: 15       # Update points every N seconds (default: 15)
 
   # Capture points
+  capture-base-points: 50         # Base points awarded for each capture
   capture-steal-percentage: 0.5   # Percentage of hider's points stolen by seeker (50%)
 
   # Taunt item bonuses
@@ -30,6 +51,7 @@ points:
 capture:
   method: "ATTACK"         # Capture method
   damage: false            # Whether to deal actual damage
+  mode: "INFECTION"        # What happens when captured: "SPECTATOR" (become spectator) or "INFECTION" (become seeker)
 
 economy:
   enabled: true

@@ -11,9 +11,7 @@ import java.util.UUID
 data class ArenaSetupSession(
     val adminUuid: UUID,
     var pos1: Location? = null,
-    var pos2: Location? = null,
-    var seekerSpawn: Location? = null,
-    var hiderSpawn: Location? = null
+    var pos2: Location? = null
 ) {
     /**
      * Check if all positions are set
@@ -21,7 +19,7 @@ data class ArenaSetupSession(
      * @return True if ready to create arena
      */
     fun isComplete(): Boolean {
-        return pos1 != null && pos2 != null && seekerSpawn != null && hiderSpawn != null
+        return pos1 != null && pos2 != null
     }
 
     /**
@@ -34,11 +32,9 @@ data class ArenaSetupSession(
 
         if (pos1 == null) errors.add("pos1 is not set. Use /hs admin setpos1")
         if (pos2 == null) errors.add("pos2 is not set. Use /hs admin setpos2")
-        if (seekerSpawn == null) errors.add("seeker spawn is not set. Use /hs admin setspawn seeker")
-        if (hiderSpawn == null) errors.add("hider spawn is not set. Use /hs admin setspawn hider")
 
         // Check same world
-        val worlds = listOfNotNull(pos1?.world, pos2?.world, seekerSpawn?.world, hiderSpawn?.world).distinct()
+        val worlds = listOfNotNull(pos1?.world, pos2?.world).distinct()
         if (worlds.size > 1) {
             errors.add("All positions must be in the same world (found: ${worlds.joinToString { it.name }})")
         }
@@ -56,7 +52,7 @@ data class ArenaSetupSession(
      */
     fun toArena(name: String, displayName: String): Arena {
         val validationErrors = validate()
-        require(validationErrors.isEmpty()) { 
+        require(validationErrors.isEmpty()) {
             "Cannot create arena. Missing:\n" + validationErrors.joinToString("\n- ", "- ")
         }
 
@@ -64,8 +60,7 @@ data class ArenaSetupSession(
             name = name,
             displayName = displayName,
             world = pos1!!.world!!,
-            boundaries = ArenaBoundaries(pos1!!, pos2!!),
-            spawns = ArenaSpawns(seekerSpawn!!, hiderSpawn!!)
+            boundaries = ArenaBoundaries(pos1!!, pos2!!)
         )
     }
 }

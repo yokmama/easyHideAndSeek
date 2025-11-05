@@ -1,0 +1,9 @@
+# Spectator State Persistence
+# This file stores player spectator mode preferences
+# Format:
+# spectators:
+#   <uuid>:
+#     enabled: true/false
+#     last-updated: <timestamp>
+
+spectators: {}

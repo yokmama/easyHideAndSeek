@@ -10,7 +10,7 @@ import com.hideandseek.listeners.BlockBreakListener
 import com.hideandseek.listeners.PlayerDeathListener
 import com.hideandseek.points.PointManager
 import com.hideandseek.respawn.RespawnManager
-import com.hideandseek.scoreboard.ScoreboardManager
+// ScoreboardManager removed - using simple teams only
 import com.hideandseek.shop.ShopManager
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
@@ -23,7 +23,6 @@ class Main : JavaPlugin() {
     private lateinit var arenaManager: ArenaManager
     private lateinit var shopManager: ShopManager
     private lateinit var disguiseManager: DisguiseManager
-    private lateinit var scoreboardManager: ScoreboardManager
     private lateinit var pointManager: PointManager
     private lateinit var blockRestorationManager: BlockRestorationManager
     private lateinit var respawnManager: RespawnManager
@@ -40,13 +39,11 @@ class Main : JavaPlugin() {
         arenaManager = ArenaManager(this, configManager)
         shopManager = ShopManager(this, configManager)
         disguiseManager = DisguiseManager(this, gameManager)
-        scoreboardManager = ScoreboardManager(this)
         pointManager = PointManager(this)
 
         // Wire up manager dependencies
         gameManager.shopManager = shopManager
         gameManager.disguiseManager = disguiseManager
-        gameManager.scoreboardManager = scoreboardManager
         gameManager.pointManager = pointManager
         gameManager.arenaManager = arenaManager
 

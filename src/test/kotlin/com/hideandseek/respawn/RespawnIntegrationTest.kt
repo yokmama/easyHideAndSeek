@@ -5,7 +5,6 @@ import be.seeseemelk.mockbukkit.ServerMock
 import be.seeseemelk.mockbukkit.entity.PlayerMock
 import com.hideandseek.arena.Arena
 import com.hideandseek.arena.ArenaBoundaries
-import com.hideandseek.arena.ArenaSpawns
 import com.hideandseek.config.BlockRestorationConfig
 import com.hideandseek.game.Game
 import com.hideandseek.game.GameManager
@@ -79,10 +78,6 @@ class RespawnIntegrationTest {
             name = "test",
             displayName = "Test Arena",
             world = world,
-            spawns = ArenaSpawns(
-                seeker = spawnLoc,
-                hider = spawnLoc
-            ),
             boundaries = ArenaBoundaries(pos1, pos2)
         )
 

@@ -19,7 +19,8 @@ class PlayerJoinListener(
     private val plugin: Plugin,
     private val disguiseManager: DisguiseManager,
     private val effectManager: EffectManager,
-    private val gameManager: com.hideandseek.game.GameManager
+    private val gameManager: com.hideandseek.game.GameManager,
+    private val spectatorManager: com.hideandseek.spectator.SpectatorManager? = null
 ) : Listener {
 
     private val cleanedWorlds = mutableSetOf<String>()

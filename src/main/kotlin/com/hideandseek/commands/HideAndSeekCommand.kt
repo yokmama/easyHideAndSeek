@@ -10,7 +10,8 @@ class HideAndSeekCommand(
     private val joinCommand: JoinCommand,
     private val leaveCommand: LeaveCommand,
     private val adminCommand: AdminCommand,
-    private val shopCommand: ShopCommand
+    private val shopCommand: ShopCommand,
+    private val spectatorCommand: SpectatorCommand
 ) : CommandExecutor, TabCompleter {
 
     override fun onCommand(
@@ -28,6 +29,7 @@ class HideAndSeekCommand(
             "join" -> joinCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "leave" -> leaveCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "shop" -> shopCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
+            "spectator" -> spectatorCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "admin" -> adminCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             else -> sendHelp(sender)
         }
@@ -44,6 +46,10 @@ class HideAndSeekCommand(
             "&7/hs shop &f- Open shop (in-game only)"
         )
 
+        if (sender.hasPermission("hideandseek.spectate")) {
+            MessageUtil.send(sender, "&7/hs spectator <on|off> &f- Toggle spectator mode")
+        }
+
         if (sender.hasPermission("hideandseek.admin")) {
             MessageUtil.send(sender, "&7/hs admin &f- Admin commands")
         }
@@ -57,6 +63,9 @@ class HideAndSeekCommand(
     ): List<String>? {
         if (args.size == 1) {
             val subcommands = mutableListOf("join", "leave", "shop")
+            if (sender.hasPermission("hideandseek.spectate")) {
+                subcommands.add("spectator")
+            }
             if (sender.hasPermission("hideandseek.admin")) {
                 subcommands.add("admin")
             }
@@ -65,6 +74,10 @@ class HideAndSeekCommand(
 
         if (args.size > 1 && args[0].lowercase() == "admin") {
             return adminCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
+        }
+
+        if (args.size > 1 && args[0].lowercase() == "spectator") {
+            return spectatorCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
         }
 
         return null

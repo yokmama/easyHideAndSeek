@@ -85,25 +85,6 @@ class ArenaManager(
     }
 
     /**
-     * Set spawn point for admin's setup session
-     *
-     * @param admin Admin player
-     * @param role "seeker" or "hider"
-     * @param location Spawn location with rotation
-     */
-    fun setSpawn(admin: Player, role: String, location: Location) {
-        val session = setupSessions.getOrPut(admin.uniqueId) {
-            ArenaSetupSession(admin.uniqueId)
-        }
-
-        when (role.lowercase()) {
-            "seeker" -> session.seekerSpawn = location
-            "hider" -> session.hiderSpawn = location
-            else -> throw IllegalArgumentException("Invalid role: $role (must be 'seeker' or 'hider')")
-        }
-    }
-
-    /**
      * Get admin's current setup session
      *
      * @param admin Admin player

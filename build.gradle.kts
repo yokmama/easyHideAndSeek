@@ -41,6 +41,12 @@ tasks {
         relocate("kotlin", "com.hideandseek.libs.kotlin")
     }
 
+    register<Copy>("copyJar") {
+        dependsOn(shadowJar)
+        from(shadowJar.get().archiveFile)
+        into("run/plugins/")
+    }
+
     test {
         useJUnitPlatform()
     }
@@ -53,6 +59,7 @@ kotlin {
 
 tasks.build {
     dependsOn("shadowJar")
+    finalizedBy("copyJar")
 }
 
 tasks.processResources {

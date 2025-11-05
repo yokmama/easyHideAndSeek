@@ -444,6 +444,8 @@ hideandseek.stats.reset   # 統計リセット
 - Kotlin 2.2.21 / JVM 21 + Paper API 1.21.5, Vault API 1.7, Kotlin stdlib-jdk8 (004-shop-items-review)
 - YAML configuration files (config.yml, shop.yml), in-memory state management during games (004-shop-items-review)
 - In-memory tracking (no persistence across restarts) (005-block-auto-restore)
+- Kotlin 2.2.21 with JVM 21 + Paper API 1.21.5-R0.1-SNAPSHOT, VaultAPI 1.7, Kotlin stdlib-jdk8 (006-auto-restart-spectator)
+- YAML files (config.yml for settings, spectators.yml for persistent spectator states) (006-auto-restart-spectator)
 
 ## Recent Changes
 - 003-seeker-shop: Added Kotlin 2.2.21 / Paper API 1.21.5 + Paper API、Vault API、Kotlin stdlib-jdk8

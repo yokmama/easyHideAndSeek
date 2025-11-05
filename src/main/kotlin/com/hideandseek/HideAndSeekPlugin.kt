@@ -14,7 +14,7 @@ import com.hideandseek.effects.EffectStorage
 import com.hideandseek.game.GameManager
 import com.hideandseek.listeners.*
 import com.hideandseek.respawn.RespawnManager
-import com.hideandseek.scoreboard.ScoreboardManager
+import com.hideandseek.scoreboard.GameScoreboard
 import com.hideandseek.shop.PurchaseStorage
 import com.hideandseek.shop.ShopManager
 import com.hideandseek.utils.EffectScheduler
@@ -38,8 +38,6 @@ class HideAndSeekPlugin : JavaPlugin() {
         private set
     lateinit var disguiseManager: DisguiseManager
         private set
-    lateinit var scoreboardManager: ScoreboardManager
-        private set
     lateinit var taskScheduler: TaskScheduler
         private set
 
@@ -61,6 +59,14 @@ class HideAndSeekPlugin : JavaPlugin() {
     lateinit var respawnManager: RespawnManager
         private set
 
+    // Spectator system
+    lateinit var spectatorManager: com.hideandseek.spectator.SpectatorManager
+        private set
+
+    // Scoreboard system
+    lateinit var gameScoreboard: GameScoreboard
+        private set
+
     override fun onEnable() {
         logger.info("HideAndSeek plugin enabling...")
 
@@ -77,7 +83,6 @@ class HideAndSeekPlugin : JavaPlugin() {
         shopManager.loadCategories()
 
         disguiseManager = DisguiseManager(this, gameManager)
-        scoreboardManager = ScoreboardManager(this)
 
         // Initialize effect system
         val effectStorage = EffectStorage()
@@ -104,6 +109,15 @@ class HideAndSeekPlugin : JavaPlugin() {
         respawnManager = RespawnManager(this, blockRestorationConfig, gameManager)
         logger.info("Respawn system initialized")
 
+        // Initialize spectator system
+        spectatorManager = com.hideandseek.spectator.SpectatorManager(this)
+        spectatorManager.initialize()
+        logger.info("Spectator system initialized")
+
+        // Initialize scoreboard system
+        gameScoreboard = GameScoreboard(this)
+        logger.info("Scoreboard system initialized")
+
         // Register effect handlers
         effectManager.registerHandler(
             com.hideandseek.effects.EffectType.VISION,
@@ -127,9 +141,9 @@ class HideAndSeekPlugin : JavaPlugin() {
 
         gameManager.shopManager = shopManager
         gameManager.disguiseManager = disguiseManager
-        gameManager.scoreboardManager = scoreboardManager
         gameManager.pointManager = pointManager
         gameManager.arenaManager = arenaManager
+        gameManager.gameScoreboard = gameScoreboard
 
         registerCommands()
         registerListeners()
@@ -167,6 +181,14 @@ class HideAndSeekPlugin : JavaPlugin() {
         val clearedCount = blockRestorationManager.clearAll()
         logger.info("Block restoration system stopped ($clearedCount pending blocks cleared)")
 
+        // Clear all scoreboards
+        gameScoreboard.clearAll()
+        logger.info("Scoreboard system cleared")
+
+        // Shutdown spectator system
+        spectatorManager.shutdown()
+        spectatorManager.getConfig().save()
+
         taskScheduler.cancelAll()
         logger.info("HideAndSeek plugin disabled!")
     }
@@ -178,7 +200,8 @@ class HideAndSeekPlugin : JavaPlugin() {
         val leaveCommand = LeaveCommand(gameManager)
         val shopCommand = com.hideandseek.commands.ShopCommand(shopManager, gameManager)
         val adminCommand = AdminCommand(arenaManager, gameManager)
-        val mainCommand = HideAndSeekCommand(joinCommand, leaveCommand, adminCommand, shopCommand)
+        val spectatorCommand = com.hideandseek.commands.SpectatorCommand(spectatorManager, gameManager)
+        val mainCommand = HideAndSeekCommand(joinCommand, leaveCommand, adminCommand, shopCommand, spectatorCommand)
 
         val command = getCommand("hideandseek")
         if (command == null) {
@@ -202,8 +225,9 @@ class HideAndSeekPlugin : JavaPlugin() {
         val playerMoveListener = PlayerMoveListener(disguiseManager)
         playerMoveListener.setPlugin(this)
 
-        val effectCleanupListener = com.hideandseek.listeners.EffectCleanupListener(effectManager, logger)
-        val playerJoinListener = com.hideandseek.listeners.PlayerJoinListener(this, disguiseManager, effectManager, gameManager)
+        val effectCleanupListener = com.hideandseek.listeners.EffectCleanupListener(effectManager, gameManager, logger)
+        val playerJoinListener = com.hideandseek.listeners.PlayerJoinListener(this, disguiseManager, effectManager, gameManager, spectatorManager)
+        val spectatorEventListener = com.hideandseek.listeners.SpectatorEventListener(spectatorManager, gameManager)
 
         pluginManager.registerEvents(shopListener, this)
         pluginManager.registerEvents(InventoryListener(shopManager), this)
@@ -214,12 +238,13 @@ class HideAndSeekPlugin : JavaPlugin() {
         pluginManager.registerEvents(BoundaryListener(gameManager), this)
         pluginManager.registerEvents(effectCleanupListener, this)
         pluginManager.registerEvents(playerJoinListener, this)
+        pluginManager.registerEvents(spectatorEventListener, this)
 
         // Block restoration listeners
         pluginManager.registerEvents(BlockBreakListener(gameManager, blockRestorationManager, this), this)
         pluginManager.registerEvents(PlayerDeathListener(this, gameManager, respawnManager), this)
 
-        logger.info("Listeners registered (including BlockBreakListener and PlayerDeathListener)")
+        logger.info("Listeners registered (including BlockBreakListener, PlayerDeathListener, and SpectatorEventListener)")
     }
 
     /**

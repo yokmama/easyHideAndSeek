@@ -33,7 +33,6 @@ class AdminCommand(
         when (args[0].lowercase()) {
             "setpos1" -> handleSetPos1(sender)
             "setpos2" -> handleSetPos2(sender)
-            "setspawn" -> handleSetSpawn(sender, args)
             "creategame" -> handleCreateGame(sender, args)
             "list" -> handleList(sender)
             "delete" -> handleDelete(sender, args)
@@ -77,34 +76,6 @@ class AdminCommand(
         }
     }
 
-    private fun handleSetSpawn(sender: CommandSender, args: Array<out String>) {
-        if (sender !is Player) {
-            MessageUtil.send(sender, "&cPlayer only")
-            return
-        }
-
-        if (args.size < 2) {
-            MessageUtil.send(sender, "&cUsage: /hs admin setspawn <seeker|hider>")
-            return
-        }
-
-        val role = args[1].lowercase()
-        if (role != "seeker" && role != "hider") {
-            MessageUtil.send(sender, "&cUsage: /hs admin setspawn <seeker|hider>")
-            return
-        }
-
-        try {
-            arenaManager.setSpawn(sender, role, sender.location)
-            MessageUtil.send(
-                sender,
-                "&a${role.replaceFirstChar { it.uppercase() }} spawn set: X=${sender.location.blockX}, Y=${sender.location.blockY}, Z=${sender.location.blockZ}"
-            )
-        } catch (e: Exception) {
-            MessageUtil.send(sender, "&c${e.message}")
-        }
-    }
-
     private fun handleCreateGame(sender: CommandSender, args: Array<out String>) {
         if (sender !is Player) {
             MessageUtil.send(sender, "&cPlayer only")
@@ -130,8 +101,7 @@ class AdminCommand(
                 "&aArena '$name' created!",
                 "&7- World: ${arena.world.name}",
                 "&7- Size: ${String.format("%.1f", arena.boundaries.size)} blocks",
-                "&7- Seeker spawn: ${arena.spawns.seeker.blockX}, ${arena.spawns.seeker.blockY}, ${arena.spawns.seeker.blockZ}",
-                "&7- Hider spawn: ${arena.spawns.hider.blockX}, ${arena.spawns.hider.blockY}, ${arena.spawns.hider.blockZ}"
+                "&7- Center: ${arena.boundaries.center.blockX}, ${arena.boundaries.center.blockY}, ${arena.boundaries.center.blockZ}"
             )
         } catch (e: Exception) {
             MessageUtil.send(sender, "&c${e.message}")
@@ -213,7 +183,6 @@ class AdminCommand(
             "&e===[ Hide and Seek Admin ]===",
             "&7/hs admin setpos1 &f- Set first corner",
             "&7/hs admin setpos2 &f- Set second corner",
-            "&7/hs admin setspawn <seeker|hider> &f- Set spawn point",
             "&7/hs admin creategame <name> &f- Create arena",
             "&7/hs admin list &f- List arenas",
             "&7/hs admin delete <name> &f- Delete arena",
@@ -230,10 +199,9 @@ class AdminCommand(
         if (!sender.hasPermission("hideandseek.admin")) return emptyList()
 
         return when (args.size) {
-            1 -> listOf("setpos1", "setpos2", "setspawn", "creategame", "list", "delete", "start")
+            1 -> listOf("setpos1", "setpos2", "creategame", "list", "delete", "start")
                 .filter { it.startsWith(args[0].lowercase()) }
             2 -> when (args[0].lowercase()) {
-                "setspawn" -> listOf("seeker", "hider").filter { it.startsWith(args[1].lowercase()) }
                 "delete", "start" -> arenaManager.getArenaNames().filter { it.startsWith(args[1].lowercase()) }
                 else -> null
             }

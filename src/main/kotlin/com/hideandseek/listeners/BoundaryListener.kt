@@ -26,6 +26,15 @@ class BoundaryListener(
             return
         }
 
+        // Skip boundary check for seekers during PREPARATION phase
+        // (They are frozen in waiting area and may be outside playing area)
+        if (game.phase == GamePhase.PREPARATION) {
+            val playerData = game.players[player.uniqueId]
+            if (playerData?.role == com.hideandseek.game.PlayerRole.SEEKER) {
+                return
+            }
+        }
+
         val arena = game.arena
         val boundaries = arena.boundaries
 
@@ -35,12 +44,13 @@ class BoundaryListener(
 
         if (distance > maxDistance) {
             event.isCancelled = true
-            
+
             val direction = center.toVector().subtract(to.toVector()).normalize()
             val safeLocation = center.clone().add(direction.multiply(-maxDistance * 0.9))
             safeLocation.y = to.y
-            
+
             player.teleport(safeLocation)
+            gameManager.plugin.logger.info("[Boundary] ${player.name} tried to leave arena: distance ${distance.toInt()} > max ${maxDistance.toInt()}")
             MessageUtil.send(player, "&cYou cannot leave the game area!")
         } else if (distance > maxDistance * 0.85) {
             MessageUtil.send(player, "&eWarning: Approaching boundary!")

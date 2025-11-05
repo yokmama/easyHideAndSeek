@@ -90,6 +90,10 @@ class ScoreboardManager(
             GamePhase.ENDED -> {
                 lines.add("&7Phase: &cEnded")
             }
+            GamePhase.POST_GAME -> {
+                lines.add("&7Phase: &eRestarting")
+                lines.add("&7Next game soon...")
+            }
         }
 
         lines.add("&7")

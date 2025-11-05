@@ -68,13 +68,13 @@ class PlayerDeathListener(
             is RespawnResult.Failure -> {
                 when (result.reason) {
                     RespawnFailureReason.NO_SAFE_LOCATION_FOUND -> {
-                        // Fallback to game center
+                        // Fallback to random spawn
                         val game = gameManager.activeGame
                         if (game != null) {
-                            val fallbackLocation = game.arena.spawns.hider
+                            val fallbackLocation = gameManager.getRandomSpawnLocation(game.arena)
                             player.teleport(fallbackLocation)
-                            MessageUtil.send(player, "&eNo safe location found, respawned at game center")
-                            plugin.logger.warning("No safe spawn location found for ${player.name}, using fallback")
+                            MessageUtil.send(player, "&eNo safe location found, respawned at random location")
+                            plugin.logger.warning("No safe spawn location found for ${player.name}, using random spawn")
                         }
                     }
 
