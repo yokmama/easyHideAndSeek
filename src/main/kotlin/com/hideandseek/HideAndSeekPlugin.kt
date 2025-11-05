@@ -12,6 +12,10 @@ import com.hideandseek.disguise.DisguiseManager
 import com.hideandseek.effects.EffectManagerImpl
 import com.hideandseek.effects.EffectStorage
 import com.hideandseek.game.GameManager
+import com.hideandseek.i18n.LanguagePreferenceManager
+import com.hideandseek.i18n.LanguagePreferenceManagerImpl
+import com.hideandseek.i18n.MessageManager
+import com.hideandseek.i18n.MessageManagerImpl
 import com.hideandseek.listeners.*
 import com.hideandseek.respawn.RespawnManager
 import com.hideandseek.scoreboard.GameScoreboard
@@ -71,8 +75,19 @@ class HideAndSeekPlugin : JavaPlugin() {
     lateinit var seekerStrengthManager: com.hideandseek.strength.SeekerStrengthManager
         private set
 
+    // Internationalization (i18n) system
+    lateinit var languagePreferenceManager: LanguagePreferenceManager
+        private set
+    lateinit var messageManager: MessageManager
+        private set
+
     override fun onEnable() {
         logger.info("HideAndSeek plugin enabling...")
+
+        // Initialize i18n system FIRST (other systems may use it)
+        languagePreferenceManager = LanguagePreferenceManagerImpl(this)
+        messageManager = MessageManagerImpl(this, languagePreferenceManager)
+        logger.info("Internationalization system initialized (${languagePreferenceManager.getAvailableLanguages().size} languages)")
 
         configManager = ConfigManager(this)
         configManager.load()
@@ -163,6 +178,10 @@ class HideAndSeekPlugin : JavaPlugin() {
     override fun onDisable() {
         logger.info("HideAndSeek plugin disabling...")
 
+        // Save language preferences FIRST (before clearing other data)
+        languagePreferenceManager.saveAll()
+        logger.info("Language preferences saved (${languagePreferenceManager.getPreferenceCount()} players)")
+
         // End any active game and restore all players
         gameManager.activeGame?.let { game ->
             logger.info("Cleaning up active game...")
@@ -210,7 +229,8 @@ class HideAndSeekPlugin : JavaPlugin() {
         val shopCommand = com.hideandseek.commands.ShopCommand(shopManager, gameManager)
         val adminCommand = AdminCommand(arenaManager, gameManager)
         val spectatorCommand = com.hideandseek.commands.SpectatorCommand(spectatorManager, gameManager)
-        val mainCommand = HideAndSeekCommand(joinCommand, leaveCommand, adminCommand, shopCommand, spectatorCommand)
+        val langCommand = com.hideandseek.commands.LangCommand(languagePreferenceManager, messageManager)
+        val mainCommand = HideAndSeekCommand(joinCommand, leaveCommand, adminCommand, shopCommand, spectatorCommand, langCommand)
 
         val command = getCommand("hideandseek")
         if (command == null) {
@@ -235,7 +255,7 @@ class HideAndSeekPlugin : JavaPlugin() {
         playerMoveListener.setPlugin(this)
 
         val effectCleanupListener = com.hideandseek.listeners.EffectCleanupListener(effectManager, gameManager, logger)
-        val playerJoinListener = com.hideandseek.listeners.PlayerJoinListener(this, disguiseManager, effectManager, gameManager, spectatorManager)
+        val playerJoinListener = com.hideandseek.listeners.PlayerJoinListener(this, disguiseManager, effectManager, gameManager, spectatorManager, messageManager)
         val spectatorEventListener = com.hideandseek.listeners.SpectatorEventListener(spectatorManager, gameManager)
 
         pluginManager.registerEvents(shopListener, this)

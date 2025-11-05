@@ -3,6 +3,7 @@ package com.hideandseek.listeners
 import com.hideandseek.disguise.DisguiseManager
 import com.hideandseek.effects.EffectManager
 import com.hideandseek.game.WorldBorderBackup
+import com.hideandseek.i18n.MessageManager
 import org.bukkit.GameMode
 import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
@@ -13,14 +14,15 @@ import org.bukkit.plugin.Plugin
 /**
  * Cleans up player state on join to prevent leftover game effects
  * from server crashes or forced shutdowns
- * Also handles auto-join to game
+ * Also handles auto-join to game and displays localized welcome message
  */
 class PlayerJoinListener(
     private val plugin: Plugin,
     private val disguiseManager: DisguiseManager,
     private val effectManager: EffectManager,
     private val gameManager: com.hideandseek.game.GameManager,
-    private val spectatorManager: com.hideandseek.spectator.SpectatorManager? = null
+    private val spectatorManager: com.hideandseek.spectator.SpectatorManager? = null,
+    private val messageManager: MessageManager? = null
 ) : Listener {
 
     private val cleanedWorlds = mutableSetOf<String>()
@@ -70,18 +72,24 @@ class PlayerJoinListener(
             return
         }
 
-        // Show welcome title
-        player.showTitle(
-            net.kyori.adventure.title.Title.title(
-                com.hideandseek.utils.MessageUtil.colorize("&e&lHide and Seek"),
-                com.hideandseek.utils.MessageUtil.colorize("&7ようこそ！"),
-                net.kyori.adventure.title.Title.Times.times(
-                    java.time.Duration.ofMillis(500),
-                    java.time.Duration.ofMillis(2000),
-                    java.time.Duration.ofMillis(500)
+        // Show welcome message in player's language
+        if (messageManager != null) {
+            // Send localized welcome message
+            messageManager.send(player, "player.welcome")
+        } else {
+            // Fallback to hardcoded message if messageManager is not available
+            player.showTitle(
+                net.kyori.adventure.title.Title.title(
+                    com.hideandseek.utils.MessageUtil.colorize("&e&lHide and Seek"),
+                    com.hideandseek.utils.MessageUtil.colorize("&7ようこそ！"),
+                    net.kyori.adventure.title.Title.Times.times(
+                        java.time.Duration.ofMillis(500),
+                        java.time.Duration.ofMillis(2000),
+                        java.time.Duration.ofMillis(500)
+                    )
                 )
             )
-        )
+        }
 
         // Auto-join
         gameManager.joinGame(player)

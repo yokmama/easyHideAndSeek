@@ -11,7 +11,8 @@ class HideAndSeekCommand(
     private val leaveCommand: LeaveCommand,
     private val adminCommand: AdminCommand,
     private val shopCommand: ShopCommand,
-    private val spectatorCommand: SpectatorCommand
+    private val spectatorCommand: SpectatorCommand,
+    private val langCommand: LangCommand
 ) : CommandExecutor, TabCompleter {
 
     override fun onCommand(
@@ -30,6 +31,7 @@ class HideAndSeekCommand(
             "leave" -> leaveCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "shop" -> shopCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "spectator" -> spectatorCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
+            "lang", "language" -> langCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "admin" -> adminCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             else -> sendHelp(sender)
         }
@@ -43,7 +45,8 @@ class HideAndSeekCommand(
             "&e===[ Hide and Seek ]===",
             "&7/hs join &f- Join game",
             "&7/hs leave &f- Leave game",
-            "&7/hs shop &f- Open shop (in-game only)"
+            "&7/hs shop &f- Open shop (in-game only)",
+            "&7/hs lang [language|list] &f- Change language"
         )
 
         if (sender.hasPermission("hideandseek.spectate")) {
@@ -62,7 +65,7 @@ class HideAndSeekCommand(
         args: Array<out String>
     ): List<String>? {
         if (args.size == 1) {
-            val subcommands = mutableListOf("join", "leave", "shop")
+            val subcommands = mutableListOf("join", "leave", "shop", "lang")
             if (sender.hasPermission("hideandseek.spectate")) {
                 subcommands.add("spectator")
             }
@@ -78,6 +81,10 @@ class HideAndSeekCommand(
 
         if (args.size > 1 && args[0].lowercase() == "spectator") {
             return spectatorCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
+        }
+
+        if (args.size > 1 && (args[0].lowercase() == "lang" || args[0].lowercase() == "language")) {
+            return langCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
         }
 
         return null
