@@ -1,0 +1,26 @@
+# Block Restoration Configuration
+# Version: 1.0.0
+
+block-restoration:
+  # Core Settings
+  enabled: true
+  restoration-delay-seconds: 5  # Time before broken blocks restore
+  max-restorations-per-tick: 10  # Performance limit per tick (50ms)
+
+  # Game Integration
+  only-during-active-game: true
+  apply-during-preparation: true  # Consistent behavior across all phases
+
+  # Performance
+  enable-tile-entity-restoration: true  # Restore chest contents, sign text, etc.
+
+  # Debug
+  debug-logging: true
+  log-restoration-stats: true
+
+# Random Respawn Settings
+random-respawn:
+  enabled: true
+  search-radius: 50  # Blocks from game center
+  max-attempts: 50   # Maximum location search attempts
+  use-game-boundaries: true  # Respect arena boundaries

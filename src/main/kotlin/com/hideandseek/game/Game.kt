@@ -4,6 +4,7 @@ import com.hideandseek.arena.Arena
 import java.util.UUID
 
 data class Game(
+    val id: String = UUID.randomUUID().toString(),
     val arena: Arena,
     var phase: GamePhase,
     val players: MutableMap<UUID, PlayerGameData>,

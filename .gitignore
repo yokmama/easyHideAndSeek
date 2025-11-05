@@ -30,3 +30,5 @@ logs/
 test-output/
 coverage/
 .gradle
+specs
+.claude

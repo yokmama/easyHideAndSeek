@@ -27,4 +27,17 @@ data class Arena(
     fun isInBounds(location: Location): Boolean {
         return boundaries.contains(location)
     }
+
+    /**
+     * Get circular boundary approximation for respawn system
+     */
+    fun getCircularBoundary(): GameBoundary {
+        val center = boundaries.center
+        val radius = (boundaries.size / 2).toInt()
+        return GameBoundary(
+            centerX = center.blockX,
+            centerZ = center.blockZ,
+            radius = radius
+        )
+    }
 }

@@ -1,16 +1,19 @@
 package com.hideandseek
 
 import com.hideandseek.arena.ArenaManager
+import com.hideandseek.blockrestoration.BlockRestorationManager
 import com.hideandseek.commands.AdminCommand
 import com.hideandseek.commands.HideAndSeekCommand
 import com.hideandseek.commands.JoinCommand
 import com.hideandseek.commands.LeaveCommand
+import com.hideandseek.config.BlockRestorationConfig
 import com.hideandseek.config.ConfigManager
 import com.hideandseek.disguise.DisguiseManager
 import com.hideandseek.effects.EffectManagerImpl
 import com.hideandseek.effects.EffectStorage
 import com.hideandseek.game.GameManager
 import com.hideandseek.listeners.*
+import com.hideandseek.respawn.RespawnManager
 import com.hideandseek.scoreboard.ScoreboardManager
 import com.hideandseek.shop.PurchaseStorage
 import com.hideandseek.shop.ShopManager
@@ -18,6 +21,7 @@ import com.hideandseek.utils.EffectScheduler
 import com.hideandseek.utils.TaskScheduler
 import net.milkbowl.vault.economy.Economy
 import org.bukkit.plugin.java.JavaPlugin
+import java.io.File
 
 /**
  * Hide and Seek minigame plugin main class
@@ -51,6 +55,12 @@ class HideAndSeekPlugin : JavaPlugin() {
     lateinit var pointManager: com.hideandseek.points.PointManager
         private set
 
+    // Block restoration system
+    lateinit var blockRestorationManager: BlockRestorationManager
+        private set
+    lateinit var respawnManager: RespawnManager
+        private set
+
     override fun onEnable() {
         logger.info("HideAndSeek plugin enabling...")
 
@@ -77,6 +87,22 @@ class HideAndSeekPlugin : JavaPlugin() {
 
         // Initialize point system
         pointManager = com.hideandseek.points.PointManager(this)
+
+        // Initialize block restoration system
+        val blockRestorationConfigFile = File(dataFolder, "block-restoration.yml")
+        if (!blockRestorationConfigFile.exists()) {
+            saveResource("block-restoration.yml", false)
+        }
+        val blockRestorationYaml = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(blockRestorationConfigFile)
+        val blockRestorationConfig = BlockRestorationConfig(blockRestorationYaml)
+
+        blockRestorationManager = BlockRestorationManager(this, blockRestorationConfig, disguiseManager)
+        blockRestorationManager.start()
+        logger.info("Block restoration system started")
+
+        // Initialize respawn manager
+        respawnManager = RespawnManager(this, blockRestorationConfig, gameManager)
+        logger.info("Respawn system initialized")
 
         // Register effect handlers
         effectManager.registerHandler(
@@ -136,6 +162,11 @@ class HideAndSeekPlugin : JavaPlugin() {
             player.sendViewDistance = 10
         }
 
+        // Stop and cleanup block restoration
+        blockRestorationManager.stop()
+        val clearedCount = blockRestorationManager.clearAll()
+        logger.info("Block restoration system stopped ($clearedCount pending blocks cleared)")
+
         taskScheduler.cancelAll()
         logger.info("HideAndSeek plugin disabled!")
     }
@@ -184,7 +215,11 @@ class HideAndSeekPlugin : JavaPlugin() {
         pluginManager.registerEvents(effectCleanupListener, this)
         pluginManager.registerEvents(playerJoinListener, this)
 
-        logger.info("Listeners registered")
+        // Block restoration listeners
+        pluginManager.registerEvents(BlockBreakListener(gameManager, blockRestorationManager, this), this)
+        pluginManager.registerEvents(PlayerDeathListener(this, gameManager, respawnManager), this)
+
+        logger.info("Listeners registered (including BlockBreakListener and PlayerDeathListener)")
     }
 
     /**
