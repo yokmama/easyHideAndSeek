@@ -67,6 +67,10 @@ class HideAndSeekPlugin : JavaPlugin() {
     lateinit var gameScoreboard: GameScoreboard
         private set
 
+    // Seeker strength system
+    lateinit var seekerStrengthManager: com.hideandseek.strength.SeekerStrengthManager
+        private set
+
     override fun onEnable() {
         logger.info("HideAndSeek plugin enabling...")
 
@@ -118,6 +122,10 @@ class HideAndSeekPlugin : JavaPlugin() {
         gameScoreboard = GameScoreboard(this)
         logger.info("Scoreboard system initialized")
 
+        // Initialize seeker strength system
+        seekerStrengthManager = com.hideandseek.strength.SeekerStrengthManager(this)
+        logger.info("Seeker strength system initialized")
+
         // Register effect handlers
         effectManager.registerHandler(
             com.hideandseek.effects.EffectType.VISION,
@@ -144,6 +152,7 @@ class HideAndSeekPlugin : JavaPlugin() {
         gameManager.pointManager = pointManager
         gameManager.arenaManager = arenaManager
         gameManager.gameScoreboard = gameScoreboard
+        gameManager.seekerStrengthManager = seekerStrengthManager
 
         registerCommands()
         registerListeners()

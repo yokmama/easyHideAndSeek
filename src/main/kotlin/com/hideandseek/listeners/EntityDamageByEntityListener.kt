@@ -28,12 +28,24 @@ class EntityDamageByEntityListener(
         val attackerData = game.players[attacker.uniqueId] ?: return
         val victimData = game.players[victim.uniqueId] ?: return
 
-        event.isCancelled = true
-
+        // Check if attacker is seeker
         if (attackerData.role != PlayerRole.SEEKER) {
+            event.isCancelled = true
             return
         }
 
+        // Handle seeker vs seeker combat (NEW - allow real damage for PK)
+        if (victimData.role == PlayerRole.SEEKER) {
+            // Allow real damage between seekers (do NOT cancel event)
+            // The actual combat result will be handled in PlayerDeathListener
+            plugin.logger.info("[SeekerCombat] ${attacker.name} is attacking ${victim.name} (seeker vs seeker PK)")
+            return
+        }
+
+        // Cancel event for seeker vs hider (instant capture, no damage)
+        event.isCancelled = true
+
+        // Handle seeker vs hider (existing logic)
         if (victimData.role != PlayerRole.HIDER) {
             return
         }
@@ -75,6 +87,14 @@ class EntityDamageByEntityListener(
             }
         }
 
+        // Add strength points to seeker (T024: Strength accumulation)
+        val strengthPointsPerCapture = plugin.config.getInt("seeker-strength.points-per-capture", 200)
+        val strengthManager = (plugin as? com.hideandseek.HideAndSeekPlugin)?.seekerStrengthManager
+        strengthManager?.addStrength(attacker.uniqueId, strengthPointsPerCapture)
+
+        val totalStrength = strengthManager?.getStrength(attacker.uniqueId) ?: 0
+        MessageUtil.send(attacker, "&6+${strengthPointsPerCapture} 強さポイント &7(合計: $totalStrength)")
+
         // Handle capture based on mode (spectator or infection)
         // This will set the appropriate role (SPECTATOR or SEEKER)
         gameManager.handleCapture(attacker, victim)
@@ -109,4 +129,5 @@ class EntityDamageByEntityListener(
             }
         }
     }
+
 }

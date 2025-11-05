@@ -28,6 +28,7 @@ class GameManager(
     var pointManager: com.hideandseek.points.PointManager? = null
     var arenaManager: com.hideandseek.arena.ArenaManager? = null
     var gameScoreboard: com.hideandseek.scoreboard.GameScoreboard? = null
+    var seekerStrengthManager: com.hideandseek.strength.SeekerStrengthManager? = null
 
     fun joinGame(player: Player): Boolean {
         val uuid = player.uniqueId
@@ -736,6 +737,103 @@ class GameManager(
                 MessageUtil.send(capturer, "&a${captured.name} を捕まえました！ &e${captured.name}が鬼になりました！")
             }
         }
+    }
+
+    /**
+     * Revert a seeker back to a hider.
+     *
+     * This is called when a weaker seeker attacks a stronger seeker.
+     * The attacker is forced back to hider role with:
+     * - Strength points reset to 0
+     * - Economic points restored to hider points
+     * - All seeker effects cleared
+     * - Respawn to random safe location
+     * - Team updated (RED → GREEN)
+     *
+     * @param seeker The seeker to revert to hider
+     * @param seekerData The player game data of the seeker
+     * @param game The active game
+     */
+    fun revertSeekerToHider(seeker: Player, seekerData: PlayerGameData, game: Game) {
+        plugin.logger.info("[Reversion] ${seeker.name} reverting to HIDER")
+
+        // 1. Role change (SEEKER → HIDER)
+        seekerData.role = PlayerRole.HIDER
+        seekerData.isCaptured = false
+
+        // 2. Reset strength points
+        val previousStrength = seekerStrengthManager?.getStrength(seeker.uniqueId) ?: 0
+        seekerStrengthManager?.resetStrength(seeker.uniqueId)
+
+        // 3. Restore economic points (hider points)
+        val hiderPoints = seekerData.hiderPoints
+        pointManager?.setPoints(seeker.uniqueId, hiderPoints)
+        plugin.logger.info("[Reversion] Restored ${seeker.name} points to $hiderPoints (from hiderPoints)")
+
+        // 4. Clear all seeker effects
+        val effectManager = (plugin as? com.hideandseek.HideAndSeekPlugin)?.effectManager
+        effectManager?.removeAllEffects(seeker.uniqueId)
+
+        // 5. Team update (RED → GREEN)
+        updateTeamForReversion(seeker, game)
+
+        // 6. Respawn to random safe location
+        val spawnLocation = getRandomSpawnLocation(game.arena)
+        seeker.teleport(spawnLocation)
+
+        // 7. Clear inventory and give shop item
+        seeker.inventory.clear()
+        giveShopItemToPlayer(seeker)
+
+        // 8. Notifications and feedback
+        MessageUtil.send(seeker, "&aあなたは人間に戻りました！")
+        broadcastToActiveGame("&e${seeker.name} が人間に戻りました！")
+
+        // Play sound and particles
+        seeker.playSound(seeker.location, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f)
+        seeker.world.spawnParticle(
+            org.bukkit.Particle.ENCHANT,
+            seeker.location,
+            50,
+            0.5, 1.0, 0.5
+        )
+
+        plugin.logger.info("[Reversion] ${seeker.name} successfully reverted to HIDER (previous strength: $previousStrength, restored points: $hiderPoints)")
+    }
+
+    /**
+     * Update team assignment when a seeker reverts to hider.
+     *
+     * Moves the player from SEEKER team (RED) to HIDER team (GREEN).
+     *
+     * @param player The player whose team to update
+     * @param game The active game
+     */
+    private fun updateTeamForReversion(player: Player, game: Game) {
+        val mainScoreboard = Bukkit.getScoreboardManager().mainScoreboard
+        val seekerTeam = mainScoreboard.getTeam("hs_seekers")
+        val hiderTeam = mainScoreboard.getTeam("hs_hiders")
+
+        seekerTeam?.removeEntry(player.name)
+        hiderTeam?.addEntry(player.name)
+
+        plugin.logger.info("[Team] ${player.name} moved from SEEKER to HIDER team (reversion)")
+
+        // Update team in all players' individual scoreboards
+        game.players.keys.forEach { uuid ->
+            Bukkit.getPlayer(uuid)?.let { otherPlayer ->
+                val playerScoreboard = otherPlayer.scoreboard
+                if (playerScoreboard != mainScoreboard) {
+                    val otherSeekerTeam = playerScoreboard.getTeam("hs_seekers")
+                    val otherHiderTeam = playerScoreboard.getTeam("hs_hiders")
+
+                    otherSeekerTeam?.removeEntry(player.name)
+                    otherHiderTeam?.addEntry(player.name)
+                }
+            }
+        }
+
+        plugin.logger.info("[Team] ${player.name} team updated in all individual scoreboards")
     }
 
     private fun applyWorldBorder(game: Game) {

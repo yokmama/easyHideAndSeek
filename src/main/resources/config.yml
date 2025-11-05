@@ -53,6 +53,12 @@ capture:
   damage: false            # Whether to deal actual damage
   mode: "INFECTION"        # What happens when captured: "SPECTATOR" (become spectator) or "INFECTION" (become seeker)
 
+# Seeker Strength System Configuration (T025)
+seeker-strength:
+  enabled: true                       # Enable seeker strength system
+  points-per-capture: 200             # Strength points earned per hider capture
+  reversion-enabled: true             # Enable forced reversion when weak seeker attacks stronger seeker
+
 economy:
   enabled: true
   currency-symbol: "coins"
