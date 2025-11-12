@@ -2,6 +2,7 @@ package com.hideandseek.i18n
 
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.title.Title
+import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import java.time.Duration
 
@@ -187,4 +188,34 @@ interface MessageManager {
      * @return True if the key exists in the properties file
      */
     fun hasKey(key: String, locale: java.util.Locale? = null): Boolean
+
+    /**
+     * Sends a localized message to any CommandSender (Player or Console).
+     *
+     * If the sender is a Player, uses their preferred language.
+     * If the sender is Console, uses the default language.
+     *
+     * @param sender The command sender to send the message to
+     * @param key The message key
+     * @param args Optional arguments for placeholders
+     */
+    fun send(sender: CommandSender, key: String, vararg args: Any)
+
+    /**
+     * Reloads all translation files.
+     *
+     * This method:
+     * - Clears the ResourceBundle cache
+     * - Reloads all .properties files from disk
+     *
+     * @throws Exception if reload fails
+     */
+    fun reload()
+
+    /**
+     * Gets a list of available language codes.
+     *
+     * @return List of language codes (e.g., ["en_US", "ja_JP"])
+     */
+    fun getAvailableLanguages(): List<String>
 }

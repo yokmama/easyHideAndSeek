@@ -198,6 +198,13 @@ class ShopConfig(private val config: ConfigurationSection) {
         val tauntType = section.getString("taunt-type")
         val tauntBonus = section.getInt("taunt-bonus", 0).takeIf { it > 0 }
 
+        // Parse item-type for GiveItem action
+        val itemType = section.getString("item-type")
+        val itemMaterial = section.getString("item-material")
+        val itemAmount = section.getInt("item-amount", 1)
+
+        println("[ShopConfig] Loading item '$id': itemType=$itemType, itemMaterial=$itemMaterial, itemAmount=$itemAmount")
+
         // Parse purchase restrictions
         val roleFilter = section.getString("role-filter")  // "SEEKER" or "HIDER" or null
         val cooldown = section.getInt("cooldown", 0).takeIf { it > 0 }
@@ -212,14 +219,28 @@ class ShopConfig(private val config: ConfigurationSection) {
         }
 
         // Determine action type
+        // IMPORTANT: Check item-type first before legacy taunt-type
         val action = when {
+            (itemType == "TAUNT_ITEM" || itemType == "EQUIPMENT") && itemMaterial != null -> {
+                // Give items to inventory (taunt items or equipment)
+                val giveMaterial = try {
+                    Material.valueOf(itemMaterial.uppercase())
+                } catch (e: IllegalArgumentException) {
+                    material // Fallback to display material
+                }
+                println("[ShopConfig] Item '$id' -> GiveItem($giveMaterial, $itemAmount) [itemType=$itemType, itemMaterial=$itemMaterial]")
+                ShopAction.GiveItem(giveMaterial, itemAmount)
+            }
             effectType != null && effectDuration != null && effectIntensity != null -> {
+                println("[ShopConfig] Item '$id' -> UseEffectItem")
                 ShopAction.UseEffectItem(effectType, effectDuration, effectIntensity)
             }
             tauntType != null && tauntBonus != null -> {
+                println("[ShopConfig] Item '$id' -> UseTauntItem (legacy - DEPRECATED)")
                 ShopAction.UseTauntItem(tauntType, tauntBonus, material)
             }
             else -> {
+                println("[ShopConfig] Item '$id' -> Disguise (default)")
                 ShopAction.Disguise(material)
             }
         }

@@ -76,156 +76,285 @@ shop:
           material: ENDER_EYE
           display-name: "&b視界拡大"
           slot: 10
-          price: 300
+          price: 0
           lore:
             - "&730秒間視界が拡大します"
             - "&7(暗視効果 + 描画距離32チャンク)"
             - ""
-            - "&e価格: &6300 coins"
+            - "&a無料 &7(クールダウン: 90秒)"
           effect-type: "VISION"
           effect-duration: 30
           effect-intensity: 1.0
           role-filter: "SEEKER"
+          cooldown: 90
           usage-restriction: "SEEK_PHASE_ONLY"
 
         glow-detector:
           material: GLOWSTONE_DUST
           display-name: "&e偽装ブロック発光"
           slot: 11
-          price: 500
+          price: 0
           lore:
             - "&715秒間偽装ブロックが発光します"
             - "&7(パーティクル表示)"
             - ""
-            - "&e価格: &6500 coins"
-            - "&c購入制限: 3回/ゲーム"
+            - "&a無料 &7(クールダウン: 120秒)"
           effect-type: "GLOW"
           effect-duration: 15
           effect-intensity: 1.0
           role-filter: "SEEKER"
-          max-purchases: 3
+          cooldown: 120
           usage-restriction: "SEEK_PHASE_ONLY"
 
         speed-boost:
           material: SUGAR
           display-name: "&aスピードブースト"
           slot: 12
-          price: 200
+          price: 0
           lore:
             - "&730秒間移動速度が上昇します"
             - "&7(Speed II効果)"
             - ""
-            - "&e価格: &6200 coins"
+            - "&a無料 &7(クールダウン: 60秒)"
           effect-type: "SPEED"
           effect-duration: 30
           effect-intensity: 1.0
           role-filter: "SEEKER"
+          cooldown: 60
           usage-restriction: "SEEK_PHASE_ONLY"
 
         reach-extender:
           material: STICK
           display-name: "&d攻撃範囲拡大"
           slot: 13
-          price: 250
+          price: 0
           lore:
             - "&730秒間攻撃範囲が1.5倍になります"
             - "&7(4.5 → 6.75ブロック)"
             - ""
-            - "&e価格: &6250 coins"
+            - "&a無料 &7(クールダウン: 60秒)"
           effect-type: "REACH"
           effect-duration: 30
           effect-intensity: 1.5
           role-filter: "SEEKER"
-          usage-restriction: "SEEK_PHASE_ONLY"
-
-        # T044: Tracker Compass - Points to nearest Hider
-        tracker-compass:
-          material: COMPASS
-          display-name: "&6追跡コンパス"
-          slot: 14
-          price: 250
-          lore:
-            - "&730秒間最も近いハイダーを指します"
-            - "&72秒ごとに自動更新"
-            - ""
-            - "&e価格: &6250 coins"
-          effect-type: "TRACKER_COMPASS"
-          effect-duration: 30
-          effect-intensity: 1.0
-          role-filter: "SEEKER"
-          usage-restriction: "SEEK_PHASE_ONLY"
-
-        # T045: Area Scan - Reveals Hider count in radius
-        area-scan:
-          material: ECHO_SHARD
-          display-name: "&bエリアスキャン"
-          slot: 15
-          price: 450
-          lore:
-            - "&712ブロック範囲内のハイダー数と方向を表示"
-            - "&7壁越しでも検出可能"
-            - ""
-            - "&e価格: &6450 coins"
-          effect-type: "AREA_SCAN"
-          effect-duration: 5
-          effect-intensity: 12.0
-          role-filter: "SEEKER"
-          usage-restriction: "SEEK_PHASE_ONLY"
-
-        # T046: Eagle Eye - Highlights disguised blocks
-        eagle-eye:
-          material: ENDER_EYE
-          display-name: "&e鷹の目"
-          slot: 16
-          price: 500
-          lore:
-            - "&720秒間偽装ブロックがパーティクルで光る"
-            - "&715ブロック範囲内を検出"
-            - ""
-            - "&e価格: &6500 coins"
-            - "&c購入制限: 2回/ゲーム"
-          effect-type: "EAGLE_EYE"
-          effect-duration: 20
-          effect-intensity: 15.0
-          role-filter: "SEEKER"
-          max-purchases: 2
+          cooldown: 60
           usage-restriction: "SEEK_PHASE_ONLY"
 
         # T047: Tracker Insight - Shows last-moved times
         tracker-insight:
           material: CLOCK
           display-name: "&d追跡の洞察"
-          slot: 17
-          price: 200
+          slot: 14
+          price: 0
           lore:
             - "&7各ハイダーの静止時間を表示"
             - "&7偽装中のハイダーを推測"
             - ""
-            - "&e価格: &6200 coins"
+            - "&a無料 &7(クールダウン: 60秒)"
           effect-type: "TRACKER_INSIGHT"
           effect-duration: 10
           effect-intensity: 1.0
           role-filter: "SEEKER"
+          cooldown: 60
           usage-restriction: "SEEK_PHASE_ONLY"
 
         # T048: Capture Net - 2x capture reward
         capture-net:
           material: FISHING_ROD
           display-name: "&c捕獲ネット"
-          slot: 18
-          price: 600
+          slot: 15
+          price: 0
           lore:
             - "&710秒以内に捕獲すると報酬が2倍"
             - "&7タイミングが重要"
             - ""
-            - "&e価格: &6600 coins"
-            - "&c購入制限: 2回/ゲーム"
+            - "&a無料 &7(クールダウン: 120秒)"
           effect-type: "CAPTURE_NET"
           effect-duration: 10
           effect-intensity: 2.0
           role-filter: "SEEKER"
-          max-purchases: 2
+          cooldown: 120
           usage-restriction: "SEEK_PHASE_ONLY"
+
+    # Seeker Combat Equipment Category
+    # Anti-Seeker weapons for Seeker vs Seeker combat
+    seeker-equipment:
+      display-name: "&4⚔ 武器・防具"
+      icon: IRON_SWORD
+      slot: 12
+      role-filter: "SEEKER"
+      description:
+        - "&7対鬼用の装備を購入"
+        - "&c鬼同士の戦闘でのみ有効"
+
+      items:
+        # Weapons
+        iron-sword:
+          material: IRON_SWORD
+          display-name: "&f鉄の剣"
+          slot: 10
+          price: 200
+          lore:
+            - "&7対鬼用の武器"
+            - "&cダメージ: 6 (鬼にのみ)"
+            - ""
+            - "&e価格: &6200 coins"
+            - "&7人間には無効"
+          item-type: "EQUIPMENT"
+          item-material: "IRON_SWORD"
+          item-amount: 1
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        diamond-sword:
+          material: DIAMOND_SWORD
+          display-name: "&b&lダイヤの剣"
+          slot: 11
+          price: 500
+          lore:
+            - "&7強力な対鬼用武器"
+            - "&cダメージ: 7 (鬼にのみ)"
+            - ""
+            - "&e価格: &6500 coins"
+            - "&7人間には無効"
+            - "&c購入制限: 1回/ゲーム"
+          item-type: "EQUIPMENT"
+          item-material: "DIAMOND_SWORD"
+          item-amount: 1
+          role-filter: "SEEKER"
+          max-purchases: 1
+          usage-restriction: "IN_GAME_ONLY"
+
+        bow:
+          material: BOW
+          display-name: "&e弓"
+          slot: 12
+          price: 300
+          lore:
+            - "&7遠距離攻撃用"
+            - "&7矢 x16 付属"
+            - ""
+            - "&e価格: &6300 coins"
+            - "&7人間には無効"
+          item-type: "EQUIPMENT"
+          item-material: "BOW"
+          item-amount: 1
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        arrows:
+          material: ARROW
+          display-name: "&f矢 x32"
+          slot: 13
+          price: 100
+          lore:
+            - "&7弓用の矢"
+            - ""
+            - "&e価格: &6100 coins"
+          item-type: "EQUIPMENT"
+          item-material: "ARROW"
+          item-amount: 32
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        # Armor
+        iron-helmet:
+          material: IRON_HELMET
+          display-name: "&f鉄のヘルメット"
+          slot: 19
+          price: 150
+          lore:
+            - "&7対鬼用の防具"
+            - "&a防御力: +2"
+            - ""
+            - "&e価格: &6150 coins"
+          item-type: "EQUIPMENT"
+          item-material: "IRON_HELMET"
+          item-amount: 1
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        iron-chestplate:
+          material: IRON_CHESTPLATE
+          display-name: "&f鉄のチェストプレート"
+          slot: 20
+          price: 250
+          lore:
+            - "&7対鬼用の防具"
+            - "&a防御力: +6"
+            - ""
+            - "&e価格: &6250 coins"
+          item-type: "EQUIPMENT"
+          item-material: "IRON_CHESTPLATE"
+          item-amount: 1
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        iron-leggings:
+          material: IRON_LEGGINGS
+          display-name: "&f鉄のレギンス"
+          slot: 21
+          price: 200
+          lore:
+            - "&7対鬼用の防具"
+            - "&a防御力: +5"
+            - ""
+            - "&e価格: &6200 coins"
+          item-type: "EQUIPMENT"
+          item-material: "IRON_LEGGINGS"
+          item-amount: 1
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        iron-boots:
+          material: IRON_BOOTS
+          display-name: "&f鉄のブーツ"
+          slot: 22
+          price: 100
+          lore:
+            - "&7対鬼用の防具"
+            - "&a防御力: +2"
+            - ""
+            - "&e価格: &6100 coins"
+          item-type: "EQUIPMENT"
+          item-material: "IRON_BOOTS"
+          item-amount: 1
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
+
+        diamond-chestplate:
+          material: DIAMOND_CHESTPLATE
+          display-name: "&b&lダイヤのチェストプレート"
+          slot: 29
+          price: 600
+          lore:
+            - "&7最強の対鬼用防具"
+            - "&a防御力: +8"
+            - ""
+            - "&e価格: &6600 coins"
+            - "&c購入制限: 1回/ゲーム"
+          item-type: "EQUIPMENT"
+          item-material: "DIAMOND_CHESTPLATE"
+          item-amount: 1
+          role-filter: "SEEKER"
+          max-purchases: 1
+          usage-restriction: "IN_GAME_ONLY"
+
+        shield:
+          material: SHIELD
+          display-name: "&9盾"
+          slot: 30
+          price: 200
+          lore:
+            - "&7攻撃をブロック"
+            - "&7対鬼戦に有効"
+            - ""
+            - "&e価格: &6200 coins"
+          item-type: "EQUIPMENT"
+          item-material: "SHIELD"
+          item-amount: 1
+          role-filter: "SEEKER"
+          usage-restriction: "IN_GAME_ONLY"
 
     # Disguise Blocks Category
     # T023: Items in this category are dynamically generated from disguise-blocks section
@@ -323,32 +452,41 @@ shop:
       items:
         snowball:
           material: SNOWBALL
-          display-name: "&f雪玉"
+          display-name: "&f雪玉 x5"
           slot: 10
           price: 0
           lore:
             - "&7投げてシーカーを挑発！"
-            - "&7ボーナス: &e+50ポイント"
+            - "&7基本: &e+50ポイント"
+            - "&a鬼に命中: &e+100ポイント &7(2倍！)"
             - ""
+            - "&a5個入手できます"
             - "&aFree!"
             - "&c注意: 位置がバレやすくなります"
-          taunt-type: "SNOWBALL"
-          taunt-bonus: 50
+          item-type: "TAUNT_ITEM"
+          item-material: "SNOWBALL"
+          item-amount: 5
           role-filter: "HIDER"
 
         firework:
           material: FIREWORK_ROCKET
-          display-name: "&c花火"
+          display-name: "&c花火 x5"
           slot: 11
           price: 0
           lore:
             - "&7打ち上げてシーカーを挑発！"
-            - "&7ボーナス: &e+100ポイント"
+            - "&7基本: &e+100ポイント"
+            - "&7鬼が近いほど高得点："
+            - "&c  10m以内: +100pt/人"
+            - "&e  20m以内: +50pt/人"
+            - "&7  30m以内: +25pt/人"
             - ""
+            - "&a5個入手できます"
             - "&aFree!"
             - "&c注意: 非常に目立ちます"
-          taunt-type: "FIREWORK"
-          taunt-bonus: 100
+          item-type: "TAUNT_ITEM"
+          item-material: "FIREWORK_ROCKET"
+          item-amount: 5
           role-filter: "HIDER"
 
     # T051: Hider Utility Items Category (NEW)

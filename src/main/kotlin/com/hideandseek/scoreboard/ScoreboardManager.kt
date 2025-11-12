@@ -135,6 +135,11 @@ class ScoreboardManager(
                 val captured = game.getCaptured().size
                 val total = game.getHiders().size
                 lines.add("&7Captured: &a$captured/$total")
+
+                // Display points
+                val pointMgr = (plugin as? com.hideandseek.HideAndSeekPlugin)?.pointManager
+                val points = pointMgr?.getPoints(player.uniqueId) ?: 0
+                lines.add("&7Points: &6$points")
             }
         }
 

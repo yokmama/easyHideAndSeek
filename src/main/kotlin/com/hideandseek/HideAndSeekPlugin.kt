@@ -70,6 +70,8 @@ class HideAndSeekPlugin : JavaPlugin() {
     // Scoreboard system
     lateinit var gameScoreboard: GameScoreboard
         private set
+    lateinit var localizedScoreboard: com.hideandseek.scoreboard.LocalizedScoreboardManager
+        private set
 
     // Seeker strength system
     lateinit var seekerStrengthManager: com.hideandseek.strength.SeekerStrengthManager
@@ -135,13 +137,14 @@ class HideAndSeekPlugin : JavaPlugin() {
 
         // Initialize scoreboard system
         gameScoreboard = GameScoreboard(this)
-        logger.info("Scoreboard system initialized")
+        localizedScoreboard = com.hideandseek.scoreboard.LocalizedScoreboardManager(this, messageManager)
+        logger.info("Scoreboard system initialized (including localized scoreboard)")
 
         // Initialize seeker strength system
         seekerStrengthManager = com.hideandseek.strength.SeekerStrengthManager(this)
         logger.info("Seeker strength system initialized")
 
-        // Register effect handlers
+        // Register effect handlers (old EffectHandler interface)
         effectManager.registerHandler(
             com.hideandseek.effects.EffectType.VISION,
             com.hideandseek.items.VisionEffectHandler()
@@ -159,15 +162,78 @@ class HideAndSeekPlugin : JavaPlugin() {
             com.hideandseek.items.ReachExtenderHandler()
         )
 
+        // Register new ItemEffectHandler-based handlers via adapter
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.SHADOW_SPRINT,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.ShadowSprintHandler(),
+                gameManager
+            )
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.SECOND_CHANCE,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.SecondChanceHandler(),
+                gameManager
+            )
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.DECOY_BLOCK,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.DecoyBlockHandler(),
+                gameManager
+            )
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.TRACKER_COMPASS,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.TrackerCompassHandler(),
+                gameManager
+            )
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.AREA_SCAN,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.AreaScanHandler(),
+                gameManager
+            )
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.EAGLE_EYE,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.EagleEyeHandler(),
+                gameManager
+            )
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.TRACKER_INSIGHT,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.TrackerInsightHandler(),
+                gameManager
+            )
+        )
+        effectManager.registerHandler(
+            com.hideandseek.effects.EffectType.CAPTURE_NET,
+            com.hideandseek.effects.ItemEffectHandlerAdapter(
+                com.hideandseek.items.CaptureNetHandler(),
+                gameManager
+            )
+        )
+
         // Setup Vault economy
         setupEconomy()
 
         gameManager.shopManager = shopManager
         gameManager.disguiseManager = disguiseManager
+        gameManager.messageManager = messageManager
         gameManager.pointManager = pointManager
         gameManager.arenaManager = arenaManager
         gameManager.gameScoreboard = gameScoreboard
+        gameManager.localizedScoreboard = localizedScoreboard
         gameManager.seekerStrengthManager = seekerStrengthManager
+
+        // T055: Set messageManager in shopManager for localization
+        shopManager.messageManager = messageManager
 
         registerCommands()
         registerListeners()
@@ -211,6 +277,7 @@ class HideAndSeekPlugin : JavaPlugin() {
 
         // Clear all scoreboards
         gameScoreboard.clearAll()
+        localizedScoreboard.clearAll()
         logger.info("Scoreboard system cleared")
 
         // Shutdown spectator system
@@ -224,13 +291,11 @@ class HideAndSeekPlugin : JavaPlugin() {
     private fun registerCommands() {
         logger.info("Registering commands...")
 
-        val joinCommand = JoinCommand(gameManager)
-        val leaveCommand = LeaveCommand(gameManager)
-        val shopCommand = com.hideandseek.commands.ShopCommand(shopManager, gameManager)
-        val adminCommand = AdminCommand(arenaManager, gameManager)
+        val shopCommand = com.hideandseek.commands.ShopCommand(shopManager, gameManager, messageManager)
+        val adminCommand = AdminCommand(arenaManager, gameManager, messageManager)
         val spectatorCommand = com.hideandseek.commands.SpectatorCommand(spectatorManager, gameManager)
         val langCommand = com.hideandseek.commands.LangCommand(languagePreferenceManager, messageManager)
-        val mainCommand = HideAndSeekCommand(joinCommand, leaveCommand, adminCommand, shopCommand, spectatorCommand, langCommand)
+        val mainCommand = HideAndSeekCommand(adminCommand, shopCommand, spectatorCommand, langCommand, messageManager)
 
         val command = getCommand("hideandseek")
         if (command == null) {
@@ -242,7 +307,8 @@ class HideAndSeekPlugin : JavaPlugin() {
         command.tabCompleter = mainCommand
 
         logger.info("Command 'hideandseek' (alias: 'hs') registered successfully")
-        logger.info("Available subcommands: join, leave, shop, admin")
+        logger.info("Available subcommands: shop, lang, spectator, admin")
+        logger.info("Auto-join enabled: Players automatically join game on login")
     }
 
     private fun registerListeners() {
@@ -250,6 +316,8 @@ class HideAndSeekPlugin : JavaPlugin() {
 
         val shopListener = ShopListener(this, shopManager, gameManager, effectManager, purchaseStorage, economy)
         shopListener.disguiseManager = disguiseManager
+        // T055: Set messageManager in shopListener for localization
+        shopListener.messageManager = messageManager
 
         val playerMoveListener = PlayerMoveListener(disguiseManager)
         playerMoveListener.setPlugin(this)
@@ -257,6 +325,7 @@ class HideAndSeekPlugin : JavaPlugin() {
         val effectCleanupListener = com.hideandseek.listeners.EffectCleanupListener(effectManager, gameManager, logger)
         val playerJoinListener = com.hideandseek.listeners.PlayerJoinListener(this, disguiseManager, effectManager, gameManager, spectatorManager, messageManager)
         val spectatorEventListener = com.hideandseek.listeners.SpectatorEventListener(spectatorManager, gameManager)
+        val tauntListener = com.hideandseek.listeners.TauntListener(this, gameManager, pointManager)
 
         pluginManager.registerEvents(shopListener, this)
         pluginManager.registerEvents(InventoryListener(shopManager), this)
@@ -268,12 +337,13 @@ class HideAndSeekPlugin : JavaPlugin() {
         pluginManager.registerEvents(effectCleanupListener, this)
         pluginManager.registerEvents(playerJoinListener, this)
         pluginManager.registerEvents(spectatorEventListener, this)
+        pluginManager.registerEvents(tauntListener, this)
 
         // Block restoration listeners
         pluginManager.registerEvents(BlockBreakListener(gameManager, blockRestorationManager, this), this)
         pluginManager.registerEvents(PlayerDeathListener(this, gameManager, respawnManager), this)
 
-        logger.info("Listeners registered (including BlockBreakListener, PlayerDeathListener, and SpectatorEventListener)")
+        logger.info("Listeners registered (including TauntListener, BlockBreakListener, PlayerDeathListener, and SpectatorEventListener)")
     }
 
     /**

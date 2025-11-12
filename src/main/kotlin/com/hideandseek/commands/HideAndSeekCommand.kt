@@ -1,18 +1,17 @@
 package com.hideandseek.commands
 
-import com.hideandseek.utils.MessageUtil
+import com.hideandseek.i18n.MessageManager
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.command.TabCompleter
 
 class HideAndSeekCommand(
-    private val joinCommand: JoinCommand,
-    private val leaveCommand: LeaveCommand,
     private val adminCommand: AdminCommand,
     private val shopCommand: ShopCommand,
     private val spectatorCommand: SpectatorCommand,
-    private val langCommand: LangCommand
+    private val langCommand: LangCommand,
+    private val messageManager: MessageManager
 ) : CommandExecutor, TabCompleter {
 
     override fun onCommand(
@@ -27,8 +26,6 @@ class HideAndSeekCommand(
         }
 
         when (args[0].lowercase()) {
-            "join" -> joinCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
-            "leave" -> leaveCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "shop" -> shopCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "spectator" -> spectatorCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "lang", "language" -> langCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
@@ -40,21 +37,17 @@ class HideAndSeekCommand(
     }
 
     private fun sendHelp(sender: CommandSender) {
-        MessageUtil.send(
-            sender,
-            "&e===[ Hide and Seek ]===",
-            "&7/hs join &f- Join game",
-            "&7/hs leave &f- Leave game",
-            "&7/hs shop &f- Open shop (in-game only)",
-            "&7/hs lang [language|list] &f- Change language"
-        )
+        messageManager.send(sender, "command.help.title")
+        messageManager.send(sender, "command.help.auto_join")
+        messageManager.send(sender, "command.help.shop")
+        messageManager.send(sender, "command.help.lang")
 
         if (sender.hasPermission("hideandseek.spectate")) {
-            MessageUtil.send(sender, "&7/hs spectator <on|off> &f- Toggle spectator mode")
+            messageManager.send(sender, "command.help.spectator")
         }
 
         if (sender.hasPermission("hideandseek.admin")) {
-            MessageUtil.send(sender, "&7/hs admin &f- Admin commands")
+            messageManager.send(sender, "command.help.admin")
         }
     }
 
@@ -65,7 +58,7 @@ class HideAndSeekCommand(
         args: Array<out String>
     ): List<String>? {
         if (args.size == 1) {
-            val subcommands = mutableListOf("join", "leave", "shop", "lang")
+            val subcommands = mutableListOf("shop", "lang")
             if (sender.hasPermission("hideandseek.spectate")) {
                 subcommands.add("spectator")
             }

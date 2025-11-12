@@ -26,10 +26,28 @@ data class ArenaBoundaries(
 
     /**
      * Calculate diagonal distance between corners
-     * Used for WorldBorder size
+     * Used for WorldBorder size (diameter that covers entire rectangular area)
      */
     val size: Double
-        get() = pos1.distance(pos2)
+        get() {
+            // WorldBorder is circular, so we need the diagonal distance
+            // to ensure the entire rectangular area fits inside
+            val dx = kotlin.math.abs(pos1.x - pos2.x)
+            val dz = kotlin.math.abs(pos1.z - pos2.z)
+            return kotlin.math.sqrt(dx * dx + dz * dz)
+        }
+
+    /**
+     * Get the width (X-axis) of the rectangular area
+     */
+    val width: Double
+        get() = kotlin.math.abs(pos1.x - pos2.x)
+
+    /**
+     * Get the depth (Z-axis) of the rectangular area
+     */
+    val depth: Double
+        get() = kotlin.math.abs(pos1.z - pos2.z)
 
     /**
      * Check if a location is within arena boundaries
@@ -45,6 +63,12 @@ data class ArenaBoundaries(
         val minZ = min(pos1.z, pos2.z)
         val maxZ = max(pos1.z, pos2.z)
 
-        return location.x in minX..maxX && location.z in minZ..maxZ
+        // Add 1.0 margin to allow players to stand on boundary blocks
+        // Player position is at center of their hitbox, so without margin
+        // they would be pushed back before reaching the edge block
+        val margin = 1.0
+
+        return location.x >= minX - margin && location.x <= maxX + margin &&
+               location.z >= minZ - margin && location.z <= maxZ + margin
     }
 }

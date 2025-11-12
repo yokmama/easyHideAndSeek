@@ -3,6 +3,7 @@ package com.hideandseek.i18n
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import net.kyori.adventure.title.Title
+import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import org.bukkit.plugin.Plugin
 import java.text.MessageFormat
@@ -137,6 +138,28 @@ class MessageManagerImpl(
         } catch (e: MissingResourceException) {
             false
         }
+    }
+
+    override fun send(sender: CommandSender, key: String, vararg args: Any) {
+        if (sender is Player) {
+            send(sender, key, *args)
+        } else {
+            // Console or other CommandSender - use default language
+            val rawMessage = getRawMessage(null, key, *args)
+            val component = LEGACY_SERIALIZER.deserialize(rawMessage)
+            sender.sendMessage(component)
+        }
+    }
+
+    override fun reload() {
+        clearCache()
+        // Clear ResourceBundle cache (Layer 1)
+        ResourceBundle.clearCache()
+        plugin.logger.info("MessageManager reloaded - all translation caches cleared")
+    }
+
+    override fun getAvailableLanguages(): List<String> {
+        return languagePreferenceManager.getAvailableLanguages().map { it.toLanguageTag() }
     }
 
     /**

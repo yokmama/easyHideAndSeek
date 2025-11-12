@@ -16,7 +16,17 @@ object EffectValidator {
         EffectType.VISION to (0.5 to 2.0),     // 0.5x to 2x (currently only 1.0 used)
         EffectType.GLOW to (0.5 to 2.0),       // 0.5x to 2x particle density
         EffectType.SPEED to (0.5 to 2.0),      // 0.5x to 2x speed (Speed I-III)
-        EffectType.REACH to (1.0 to 2.0)       // 1.0x to 2.0x reach multiplier
+        EffectType.REACH to (1.0 to 2.0),      // 1.0x to 2.0x reach multiplier
+
+        // New effect types (T012)
+        EffectType.SHADOW_SPRINT to (0.5 to 2.0),    // 0.5x to 2x speed for hiders
+        EffectType.DECOY_BLOCK to (1.0 to 1.0),      // N/A - fixed at 1.0
+        EffectType.SECOND_CHANCE to (1.0 to 1.0),    // N/A - fixed at 1.0
+        EffectType.TRACKER_COMPASS to (1.0 to 1.0),  // N/A - fixed at 1.0
+        EffectType.AREA_SCAN to (5.0 to 30.0),       // 5 to 30 block radius
+        EffectType.EAGLE_EYE to (5.0 to 30.0),       // 5 to 30 block detection radius
+        EffectType.TRACKER_INSIGHT to (1.0 to 1.0),  // N/A - fixed at 1.0
+        EffectType.CAPTURE_NET to (1.5 to 3.0)       // 1.5x to 3x reward multiplier
     )
 
     /**

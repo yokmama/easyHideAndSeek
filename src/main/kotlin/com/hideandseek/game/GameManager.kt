@@ -25,9 +25,11 @@ class GameManager(
 
     var shopManager: com.hideandseek.shop.ShopManager? = null
     var disguiseManager: com.hideandseek.disguise.DisguiseManager? = null
+    var messageManager: com.hideandseek.i18n.MessageManager? = null
     var pointManager: com.hideandseek.points.PointManager? = null
     var arenaManager: com.hideandseek.arena.ArenaManager? = null
     var gameScoreboard: com.hideandseek.scoreboard.GameScoreboard? = null
+    var localizedScoreboard: com.hideandseek.scoreboard.LocalizedScoreboardManager? = null
     var seekerStrengthManager: com.hideandseek.strength.SeekerStrengthManager? = null
 
     fun joinGame(player: Player): Boolean {
@@ -36,14 +38,14 @@ class GameManager(
         // Check if player is spectator
         val spectatorManager = (plugin as? com.hideandseek.HideAndSeekPlugin)?.spectatorManager
         if (spectatorManager?.isSpectator(uuid) == true) {
-            MessageUtil.send(player, "&e観戦モードが有効です。ゲームに参加するには &c/hs spectator off &eを実行してください。")
-            MessageUtil.send(player, "&7待機リストには表示されますが、ゲーム開始時に自動的に観戦者になります。")
+            messageManager?.send(player, "game.spectator.enabled_warning")
+            messageManager?.send(player, "game.spectator.wait_list_notice")
             // Still allow to join waiting list for spectating
         }
 
         // Check if already in waiting list
         if (waitingPlayers.contains(uuid)) {
-            MessageUtil.send(player, "&cAlready in game")
+            messageManager?.send(player, "player.already_in_game")
             return false
         }
 
@@ -56,11 +58,19 @@ class GameManager(
                 val playerData = game.players[uuid]!!
 
                 // Restore player to game
-                MessageUtil.send(player, "&aRejoined game as ${if (playerData.role == PlayerRole.SEEKER) "&c鬼" else "&a人"}")
+                val roleName = if (playerData.role == PlayerRole.SEEKER) {
+                    messageManager?.getMessage(player, "ui.scoreboard.role.seeker") ?: "&cSeeker"
+                } else {
+                    messageManager?.getMessage(player, "ui.scoreboard.role.hider") ?: "&aHider"
+                }
+                messageManager?.send(player, "player.join.rejoin", roleName)
 
                 // Teleport back to random spawn
                 val spawn = getRandomSpawnLocation(game.arena)
                 player.teleport(spawn)
+
+                // Restore scoreboard
+                localizedScoreboard?.addPlayer(player, game)
 
                 // Restore inventory (shop item)
                 player.inventory.clear()
@@ -69,43 +79,25 @@ class GameManager(
                 // Show role title
                 when (playerData.role) {
                     PlayerRole.SEEKER -> {
-                        player.showTitle(
-                            net.kyori.adventure.title.Title.title(
-                                MessageUtil.colorize("&c&l鬼"),
-                                MessageUtil.colorize("&7再参加しました"),
-                                net.kyori.adventure.title.Title.Times.times(
-                                    java.time.Duration.ofMillis(500),
-                                    java.time.Duration.ofMillis(2000),
-                                    java.time.Duration.ofMillis(500)
-                                )
-                            )
+                        messageManager?.sendTitle(
+                            player,
+                            "game.role.title.seeker",
+                            "game.role.subtitle.rejoined"
                         )
                     }
                     PlayerRole.HIDER -> {
                         if (playerData.isCaptured) {
-                            player.showTitle(
-                                net.kyori.adventure.title.Title.title(
-                                    MessageUtil.colorize("&7&l観戦モード"),
-                                    MessageUtil.colorize("&7鬼化済み"),
-                                    net.kyori.adventure.title.Title.Times.times(
-                                        java.time.Duration.ofMillis(500),
-                                        java.time.Duration.ofMillis(2000),
-                                        java.time.Duration.ofMillis(500)
-                                    )
-                                )
+                            messageManager?.sendTitle(
+                                player,
+                                "game.role.title.spectator",
+                                "game.role.subtitle.spectator"
                             )
                             player.gameMode = GameMode.SPECTATOR
                         } else {
-                            player.showTitle(
-                                net.kyori.adventure.title.Title.title(
-                                    MessageUtil.colorize("&a&l人"),
-                                    MessageUtil.colorize("&7再参加しました"),
-                                    net.kyori.adventure.title.Title.Times.times(
-                                        java.time.Duration.ofMillis(500),
-                                        java.time.Duration.ofMillis(2000),
-                                        java.time.Duration.ofMillis(500)
-                                    )
-                                )
+                            messageManager?.sendTitle(
+                                player,
+                                "game.role.title.hider",
+                                "game.role.subtitle.rejoined"
                             )
                         }
                     }
@@ -123,21 +115,14 @@ class GameManager(
                 player.teleport(getRandomSpawnLocation(game.arena))
                 giveShopItemToPlayer(player)
 
-                MessageUtil.send(player, "&aJoined game as &a人")
-                broadcastToGame(game, "&e${player.name} がゲームに参加しました（人）")
+                // Add to scoreboard
+                localizedScoreboard?.addPlayer(player, game)
+
+                messageManager?.send(player, "player.join.mid_game")
+                messageManager?.broadcast(game.players.keys.mapNotNull { Bukkit.getPlayer(it) }, "player.join.mid_game_broadcast", player.name)
 
                 // Show title
-                player.showTitle(
-                    net.kyori.adventure.title.Title.title(
-                        MessageUtil.colorize("&a&l人"),
-                        MessageUtil.colorize("&7鬼から逃げろ！"),
-                        net.kyori.adventure.title.Title.Times.times(
-                            java.time.Duration.ofMillis(500),
-                            java.time.Duration.ofMillis(2000),
-                            java.time.Duration.ofMillis(500)
-                        )
-                    )
-                )
+                messageManager?.sendTitle(player, "game.role.title.hider", "game.role.subtitle.hider_midjoin")
 
                 return true
             }
@@ -146,9 +131,14 @@ class GameManager(
         // No active game, join waiting list
         waitingPlayers.add(uuid)
         val count = waitingPlayers.size
-        MessageUtil.send(player, "&aJoined game! ($count players)")
+        messageManager?.send(player, "player.join.waiting", count.toString())
 
-        broadcastToWaiting("&e${player.name} joined the game ($count players)")
+        messageManager?.broadcast(
+            waitingPlayers.mapNotNull { Bukkit.getPlayer(it) }.filter { it.uniqueId != uuid },
+            "player.join.waiting_broadcast",
+            player.name,
+            count.toString()
+        )
 
         // Check if we have enough players to auto-start
         checkAutoStart()
@@ -160,8 +150,13 @@ class GameManager(
         val uuid = player.uniqueId
 
         if (waitingPlayers.remove(uuid)) {
-            MessageUtil.send(player, "&aLeft the game")
-            broadcastToWaiting("&e${player.name} left the game (${waitingPlayers.size} players)")
+            messageManager?.send(player, "player.leave")
+            messageManager?.broadcast(
+                waitingPlayers.mapNotNull { Bukkit.getPlayer(it) },
+                "player.leave.broadcast",
+                player.name,
+                waitingPlayers.size.toString()
+            )
             return true
         }
 
@@ -172,14 +167,14 @@ class GameManager(
             // Restore player state but keep them in game data (for rejoin)
             playerData.backup?.restore(player)
 
-            MessageUtil.send(player, "&aLeft the game")
-            MessageUtil.send(player, "&7You can rejoin to continue playing")
+            messageManager?.send(player, "player.leave")
+            messageManager?.send(player, "player.leave.can_rejoin")
 
             // Note: We do NOT remove from game.players - this allows rejoin
             return true
         }
 
-        MessageUtil.send(player, "&cNot in game")
+        messageManager?.send(player, "error.not_in_game")
         return false
     }
 
@@ -190,13 +185,6 @@ class GameManager(
 
         // Filter out spectators from waiting players
         val spectatorManager = (plugin as? com.hideandseek.HideAndSeekPlugin)?.spectatorManager
-
-        plugin.logger.info("[DEBUG] Waiting players: ${waitingPlayers.size}")
-        waitingPlayers.forEach { uuid ->
-            val playerName = Bukkit.getPlayer(uuid)?.name ?: "Unknown"
-            val isSpectator = spectatorManager?.isSpectator(uuid) ?: false
-            plugin.logger.info("[DEBUG] - $playerName (isSpectator: $isSpectator)")
-        }
 
         val spectatorPlayers = mutableListOf<UUID>()
         val activePlayers = if (configManager.isForceJoinAllPlayers()) {
@@ -213,13 +201,11 @@ class GameManager(
             waitingPlayers.toList()
         }
 
-        plugin.logger.info("[DEBUG] Active players (after filtering spectators): ${activePlayers.size}")
-
         // Apply spectator mode to spectators who are in waiting list
         spectatorPlayers.forEach { uuid ->
             Bukkit.getPlayer(uuid)?.let { player ->
-                MessageUtil.send(player, "&e観戦モードのため、ゲームには参加せず観戦します。")
-                MessageUtil.send(player, "&7参加するには &c/hs spectator off &7を実行してください。")
+                messageManager?.send(player, "game.spectator.start_notice")
+                messageManager?.send(player, "game.spectator.start_how_to_join")
 
                 // Apply spectator game mode
                 spectatorManager?.applySpectatorMode(player)
@@ -233,7 +219,10 @@ class GameManager(
         if (activePlayers.size < minPlayers) {
             // Check if there are only spectators
             if (waitingPlayers.isNotEmpty() && activePlayers.isEmpty()) {
-                broadcastToWaiting("&c参加プレイヤーが不足しています。観戦者のみではゲームを開始できません。")
+                messageManager?.broadcast(
+                    waitingPlayers.mapNotNull { Bukkit.getPlayer(it) },
+                    "error.min_players_spectators_only"
+                )
             }
             return null
         }
@@ -256,6 +245,7 @@ class GameManager(
         assignRoles(game)
         backupPlayers(game)
         teleportPlayers(game)
+        clearPlayerInventories(game)
         giveShopItems(game)
         applyWorldBorder(game)
         setupWorldTime(game)
@@ -291,17 +281,9 @@ class GameManager(
     fun assignRoles(game: Game) {
         val playerList = game.players.keys.toList()
 
-        plugin.logger.info("[DEBUG] Assigning roles for ${playerList.size} players")
-
         // Select exactly 1 random player as seeker
         val seekerUuid = playerList.random()
         game.players[seekerUuid]?.role = PlayerRole.SEEKER
-
-        // Log role assignments
-        game.players.forEach { (uuid, data) ->
-            val playerName = Bukkit.getPlayer(uuid)?.name ?: "Unknown"
-            plugin.logger.info("[DEBUG] Assigned role - Player: $playerName, Role: ${data.role}")
-        }
     }
 
     /**
@@ -346,31 +328,19 @@ class GameManager(
         spectatorTeam.suffix = ""
         spectatorTeam.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS)
 
-        plugin.logger.info("[Team Setup] Created teams - 鬼: RED, 人: GREEN, 観戦者: GRAY")
-
         // Assign players to teams
         game.players.forEach { (uuid, playerData) ->
             Bukkit.getPlayer(uuid)?.let { player ->
                 // Make sure player is using main scoreboard
                 if (player.scoreboard != mainScoreboard) {
-                    plugin.logger.info("[Team] Setting ${player.name} to use main scoreboard")
                     player.scoreboard = mainScoreboard
                 }
 
                 val playerName = player.name
                 when (playerData.role) {
-                    PlayerRole.SEEKER -> {
-                        seekerTeam.addEntry(playerName)
-                        plugin.logger.info("[Team] Added ${playerName} to 鬼 team (RED)")
-                    }
-                    PlayerRole.HIDER -> {
-                        hiderTeam.addEntry(playerName)
-                        plugin.logger.info("[Team] Added ${playerName} to 人 team (GREEN)")
-                    }
-                    PlayerRole.SPECTATOR -> {
-                        spectatorTeam.addEntry(playerName)
-                        plugin.logger.info("[Team] Added ${playerName} to SPECTATOR team (GRAY)")
-                    }
+                    PlayerRole.SEEKER -> seekerTeam.addEntry(playerName)
+                    PlayerRole.HIDER -> hiderTeam.addEntry(playerName)
+                    PlayerRole.SPECTATOR -> spectatorTeam.addEntry(playerName)
                 }
             }
         }
@@ -383,7 +353,6 @@ class GameManager(
                     player.scoreboard = mainScoreboard
                 }
                 spectatorTeam.addEntry(player.name)
-                plugin.logger.info("[Team] Added ${player.name} (non-game spectator) to SPECTATOR team (GRAY)")
             }
         }
     }
@@ -395,8 +364,6 @@ class GameManager(
     private fun cleanupTeams(game: Game) {
         val mainScoreboard = Bukkit.getScoreboardManager().mainScoreboard
 
-        plugin.logger.info("[Team Cleanup] Cleaning up teams for game")
-
         // Get all team names
         val teamNames = listOf("hs_seekers", "hs_hiders", "hs_spectators")
 
@@ -405,12 +372,10 @@ class GameManager(
                 // Remove all entries from team
                 team.entries.toList().forEach { entry ->
                     team.removeEntry(entry)
-                    plugin.logger.info("[Team Cleanup] Removed $entry from team $teamName")
                 }
 
                 // Unregister team
                 team.unregister()
-                plugin.logger.info("[Team Cleanup] Unregistered team $teamName")
             }
         }
 
@@ -422,8 +387,6 @@ class GameManager(
                 }
             }
         }
-
-        plugin.logger.info("[Team Cleanup] Team cleanup complete")
     }
 
     /**
@@ -485,13 +448,6 @@ class GameManager(
             Bukkit.getPlayer(uuid)?.let { player ->
                 val spawn = getRandomSpawnLocation(game.arena, usedLocations, minDistance)
 
-                // Calculate distance from center for debugging
-                val center = game.arena.boundaries.center
-                val distance = spawn.distance(center)
-                val radius = game.arena.boundaries.size / 2.0
-
-                plugin.logger.info("[Spawn] ${player.name} at (${spawn.blockX}, ${spawn.blockY}, ${spawn.blockZ}), distance from center: ${distance.toInt()}/${radius.toInt()}")
-
                 player.teleport(spawn)
                 usedLocations.add(Pair(spawn.blockX, spawn.blockZ))
             }
@@ -517,8 +473,6 @@ class GameManager(
         // Use 50% of radius (= diameter/4) for spawn area
         val maxOffset = radius * 0.5
         val world = arena.world
-
-        plugin.logger.info("[Spawn] Arena diameter: $diameter, radius: $radius, spawn range: $maxOffset")
 
         var attempts = 0
         val maxAttempts = 50
@@ -554,7 +508,8 @@ class GameManager(
                 val safeY = findSafeGroundY(world, spawnX, spawnZ)
                 if (safeY != null) {
                     val spawnLocation = Location(world, spawnX.toDouble() + 0.5, safeY.toDouble(), spawnZ.toDouble() + 0.5, 0f, 0f)
-                    plugin.logger.info("[Spawn Check] Location at (${spawnX}, ${safeY}, ${spawnZ}), distance from center: ${distanceFromCenter.toInt()}/${radius.toInt()} (${(distanceFromCenter/radius*100).toInt()}%)")
+
+                    // Verify the spawn location one more time before returning
                     return spawnLocation
                 }
             }
@@ -571,31 +526,53 @@ class GameManager(
 
     /**
      * Find safe ground Y coordinate at given X,Z position
-     * Returns Y coordinate above solid ground, or null if not safe
+     * Returns Y coordinate where player should spawn (feet position), or null if not safe
      */
     private fun findSafeGroundY(world: org.bukkit.World, x: Int, z: Int): Int? {
-        // Start from world height and search down for solid ground
-        val maxY = world.maxHeight
-        val minY = world.minHeight
+        // Use Minecraft's built-in highest block detection
+        // This gives us the topmost solid block, which is what we want for surface spawning
+        val highestY = world.getHighestBlockYAt(x, z)
 
-        for (y in maxY downTo minY) {
+        // Check a range around the highest block to ensure it's truly safe
+        // Sometimes getHighestBlockYAt can return leaves or other non-solid blocks
+        for (yOffset in 0..5) {
+            val y = highestY - yOffset
+            if (y < world.minHeight) continue
+
             val groundBlock = world.getBlockAt(x, y, z)
-            val aboveBlock = world.getBlockAt(x, y + 1, z)
-            val aboveBlock2 = world.getBlockAt(x, y + 2, z)
+            val feetBlock = world.getBlockAt(x, y + 1, z)
+            val headBlock = world.getBlockAt(x, y + 2, z)
 
-            // Check if this is solid ground with safe blocks above
+            // Check if this is a safe spawn location:
+            // 1. Ground must be solid and not dangerous
+            // 2. Player's feet and head positions must be passable (air, cave_air, void_air)
+            // 3. Ground must not be a problematic block (leaves, glass panes, etc.)
             if (groundBlock.type.isSolid &&
                 !isDangerousBlock(groundBlock.type) &&
-                isSafeAir(aboveBlock.type) &&
-                isSafeAir(aboveBlock2.type)) {
-
-                plugin.logger.info("[Safe Ground] Found at ($x, ${y + 1}, $z): ground=${groundBlock.type}, above=${aboveBlock.type}")
-                return y + 1 // Return position above the solid block
+                isSafeAir(feetBlock.type) &&
+                isSafeAir(headBlock.type) &&
+                !isUnstableBlock(groundBlock.type)) {
+                return y + 1 // Return Y position for player's feet (one block above ground)
             }
         }
 
-        plugin.logger.warning("[Safe Ground] No safe ground found at ($x, $z)")
+        plugin.logger.warning("[Safe Ground] No safe ground found at ($x, $z) near highest block Y=$highestY")
         return null
+    }
+
+    /**
+     * Check if a block is unstable for spawning (leaves, glass panes, etc.)
+     */
+    private fun isUnstableBlock(material: org.bukkit.Material): Boolean {
+        return when {
+            material.name.contains("LEAVES") -> true
+            material.name.contains("GLASS_PANE") -> true
+            material.name.contains("IRON_BARS") -> true
+            material == org.bukkit.Material.SCAFFOLDING -> true
+            material == org.bukkit.Material.SNOW -> true
+            material == org.bukkit.Material.POWDER_SNOW -> true
+            else -> false
+        }
     }
 
     /**
@@ -633,6 +610,19 @@ class GameManager(
     @Deprecated("Use isSafeAir for spawn checking")
     private fun isPassableBlock(material: org.bukkit.Material): Boolean {
         return material.isAir || !material.isSolid
+    }
+
+    /**
+     * Clear all player inventories at game start
+     */
+    private fun clearPlayerInventories(game: Game) {
+        game.players.forEach { (uuid, _) ->
+            Bukkit.getPlayer(uuid)?.let { player ->
+                player.inventory.clear()
+                player.inventory.armorContents = arrayOfNulls(4)
+                player.inventory.setItemInOffHand(null)
+            }
+        }
     }
 
     private fun giveShopItems(game: Game) {
@@ -679,8 +669,6 @@ class GameManager(
                 mainHiderTeam?.removeEntry(captured.name)
                 mainSpectatorTeam?.addEntry(captured.name)
 
-                plugin.logger.info("[Team] ${captured.name} 鬼化 - moved from 人 to 観戦者 team (main scoreboard)")
-
                 // Update team in all players' individual scoreboards
                 game.players.keys.forEach { uuid ->
                     Bukkit.getPlayer(uuid)?.let { player ->
@@ -695,9 +683,7 @@ class GameManager(
                     }
                 }
 
-                plugin.logger.info("[Team] ${captured.name} team updated in all individual scoreboards")
-
-                MessageUtil.send(captured, "&cYou were captured by ${capturer.name}! &7観戦モードになりました")
+                messageManager?.send(captured, "game.spectator.captured_spectator", capturer.name)
             }
             com.hideandseek.config.CaptureMode.INFECTION -> {
                 // Infection mode: become seeker
@@ -711,8 +697,6 @@ class GameManager(
 
                 mainHiderTeam?.removeEntry(captured.name)
                 mainSeekerTeam?.addEntry(captured.name)
-
-                plugin.logger.info("[Team] ${captured.name} 鬼化 - moved from 人 to 鬼 team (main scoreboard)")
 
                 // Update team in all players' individual scoreboards
                 game.players.keys.forEach { uuid ->
@@ -728,13 +712,11 @@ class GameManager(
                     }
                 }
 
-                plugin.logger.info("[Team] ${captured.name} team updated in all individual scoreboards")
-
                 // Give shop item
                 giveShopItemToPlayer(captured)
 
-                MessageUtil.send(captured, "&cYou were captured by ${capturer.name}! &e鬼になりました！")
-                MessageUtil.send(capturer, "&a${captured.name} を捕まえました！ &e${captured.name}が鬼になりました！")
+                messageManager?.send(captured, "game.spectator.captured_infection", capturer.name)
+                messageManager?.send(capturer, "game.capture.success_infection", captured.name)
             }
         }
     }
@@ -755,8 +737,6 @@ class GameManager(
      * @param game The active game
      */
     fun revertSeekerToHider(seeker: Player, seekerData: PlayerGameData, game: Game) {
-        plugin.logger.info("[Reversion] ${seeker.name} reverting to HIDER")
-
         // 1. Role change (SEEKER → HIDER)
         seekerData.role = PlayerRole.HIDER
         seekerData.isCaptured = false
@@ -768,7 +748,6 @@ class GameManager(
         // 3. Restore economic points (hider points)
         val hiderPoints = seekerData.hiderPoints
         pointManager?.setPoints(seeker.uniqueId, hiderPoints)
-        plugin.logger.info("[Reversion] Restored ${seeker.name} points to $hiderPoints (from hiderPoints)")
 
         // 4. Clear all seeker effects
         val effectManager = (plugin as? com.hideandseek.HideAndSeekPlugin)?.effectManager
@@ -786,8 +765,13 @@ class GameManager(
         giveShopItemToPlayer(seeker)
 
         // 8. Notifications and feedback
-        MessageUtil.send(seeker, "&aあなたは人間に戻りました！")
-        broadcastToActiveGame("&e${seeker.name} が人間に戻りました！")
+        messageManager?.send(seeker, "game.seeker.reverted")
+        messageManager?.broadcast(
+            game.players.keys.mapNotNull { Bukkit.getPlayer(it) }.filter { it.uniqueId != seeker.uniqueId },
+            "game.seeker.pk.broadcast_reversion",
+            seeker.name,
+            "" // Second parameter is the victim name, but not used in this broadcast
+        )
 
         // Play sound and particles
         seeker.playSound(seeker.location, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f)
@@ -797,8 +781,6 @@ class GameManager(
             50,
             0.5, 1.0, 0.5
         )
-
-        plugin.logger.info("[Reversion] ${seeker.name} successfully reverted to HIDER (previous strength: $previousStrength, restored points: $hiderPoints)")
     }
 
     /**
@@ -817,8 +799,6 @@ class GameManager(
         seekerTeam?.removeEntry(player.name)
         hiderTeam?.addEntry(player.name)
 
-        plugin.logger.info("[Team] ${player.name} moved from SEEKER to HIDER team (reversion)")
-
         // Update team in all players' individual scoreboards
         game.players.keys.forEach { uuid ->
             Bukkit.getPlayer(uuid)?.let { otherPlayer ->
@@ -832,8 +812,6 @@ class GameManager(
                 }
             }
         }
-
-        plugin.logger.info("[Team] ${player.name} team updated in all individual scoreboards")
     }
 
     private fun applyWorldBorder(game: Game) {
@@ -843,107 +821,109 @@ class GameManager(
         val worldBorder = world.worldBorder
         val boundaries = game.arena.boundaries
         val center = boundaries.center
-        val diameter = boundaries.size.toDouble()
+
+        // WorldBorder is a SQUARE (not circle!)
+        // Use the larger dimension to ensure the entire rectangular area fits
+        val size = kotlin.math.max(boundaries.width, boundaries.depth)
 
         // Set world border to match arena boundaries
         worldBorder.center = center
-        worldBorder.size = diameter
+        worldBorder.size = size
         worldBorder.warningDistance = 5  // Show warning 5 blocks from border
         worldBorder.damageAmount = 0.2   // Damage per second outside border
         worldBorder.damageBuffer = 0.0   // No buffer, immediate damage
-
-        plugin.logger.info("[WorldBorder] Set border at (${center.blockX}, ${center.blockZ}) with diameter $diameter")
     }
 
     private fun startPreparationPhase(game: Game) {
         game.phase = GamePhase.PREPARATION
         game.phaseStartTime = System.currentTimeMillis()
 
-        // Start scoreboard updates
-        gameScoreboard?.startUpdating(game)
+        // Start localized scoreboard updates
+        localizedScoreboard?.startUpdating(game)
 
-        game.getSeekers().forEach { uuid ->
-            Bukkit.getPlayer(uuid)?.let { player ->
-                // Add blindness effect for 15 seconds
-                player.addPotionEffect(
-                    PotionEffect(
-                        PotionEffectType.BLINDNESS,
-                        15 * 20, // 15 seconds
-                        1,
-                        false,
-                        false
-                    )
-                )
+        val msgMgr = messageManager
+        if (msgMgr != null) {
+            // Get all players to broadcast to
+            val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
 
-                // Set view distance to 0
-                player.sendViewDistance = 0
-
-                // Freeze seeker (maximum slowness and jump disable)
-                player.addPotionEffect(
-                    PotionEffect(
-                        PotionEffectType.SLOWNESS,
-                        15 * 20, // 15 seconds
-                        255, // Maximum slowness
-                        false,
-                        false
-                    )
-                )
-
-                player.addPotionEffect(
-                    PotionEffect(
-                        PotionEffectType.MINING_FATIGUE,
-                        15 * 20, // 15 seconds
-                        255,
-                        false,
-                        false
-                    )
-                )
-
-                MessageUtil.send(player, "&cあなたは鬼です！")
-                MessageUtil.send(player, "&7You cannot move or see for 15 seconds...")
-
-                // Show SEEKER title
-                player.showTitle(
-                    net.kyori.adventure.title.Title.title(
-                        MessageUtil.colorize("&c&l鬼"),
-                        MessageUtil.colorize("&715秒後にゲーム開始！"),
-                        net.kyori.adventure.title.Title.Times.times(
-                            java.time.Duration.ofMillis(500),
-                            java.time.Duration.ofMillis(3000),
-                            java.time.Duration.ofMillis(500)
+            game.getSeekers().forEach { uuid ->
+                Bukkit.getPlayer(uuid)?.let { player ->
+                    // Add blindness effect for 15 seconds
+                    player.addPotionEffect(
+                        PotionEffect(
+                            PotionEffectType.BLINDNESS,
+                            15 * 20, // 15 seconds
+                            1,
+                            false,
+                            false
                         )
                     )
-                )
-            }
-        }
 
-        // Show HIDER title to all hiders
-        game.getHiders().forEach { uuid ->
-            Bukkit.getPlayer(uuid)?.let { player ->
-                player.showTitle(
-                    net.kyori.adventure.title.Title.title(
-                        MessageUtil.colorize("&a&l人"),
-                        MessageUtil.colorize("&7鬼から逃げろ！"),
-                        net.kyori.adventure.title.Title.Times.times(
-                            java.time.Duration.ofMillis(500),
-                            java.time.Duration.ofMillis(3000),
-                            java.time.Duration.ofMillis(500)
+                    // Set view distance to 0
+                    player.sendViewDistance = 0
+
+                    // Freeze seeker (maximum slowness and jump disable)
+                    player.addPotionEffect(
+                        PotionEffect(
+                            PotionEffectType.SLOWNESS,
+                            15 * 20, // 15 seconds
+                            255, // Maximum slowness
+                            false,
+                            false
                         )
                     )
-                )
-            }
-        }
 
-        broadcastToGame(game, "&e===[ Game Started! ]===")
-        broadcastToGame(game, "&7Preparation phase: ${configManager.getPreparationTime()} seconds")
+                    player.addPotionEffect(
+                        PotionEffect(
+                            PotionEffectType.MINING_FATIGUE,
+                            15 * 20, // 15 seconds
+                            255,
+                            false,
+                            false
+                        )
+                    )
+
+                    msgMgr.send(player, "game.seeker.you_are_seeker")
+                    msgMgr.send(player, "game.seeker.cannot_move")
+
+                    // Show SEEKER title
+                    msgMgr.sendTitle(
+                        player,
+                        "game.role.title.seeker",
+                        "game.role.subtitle.seeker",
+                        java.time.Duration.ofMillis(500),
+                        java.time.Duration.ofMillis(3000),
+                        java.time.Duration.ofMillis(500)
+                    )
+                }
+            }
+
+            // Show HIDER title to all hiders
+            game.getHiders().forEach { uuid ->
+                Bukkit.getPlayer(uuid)?.let { player ->
+                    msgMgr.sendTitle(
+                        player,
+                        "game.role.title.hider",
+                        "game.role.subtitle.hider",
+                        java.time.Duration.ofMillis(500),
+                        java.time.Duration.ofMillis(3000),
+                        java.time.Duration.ofMillis(500)
+                    )
+                }
+            }
+
+            msgMgr.broadcast(allPlayers, "game.phase.preparation.broadcast")
+            msgMgr.broadcast(allPlayers, "game.phase.preparation.duration", configManager.getPreparationTime())
+        }
 
         // Restore seeker's view distance after 15 seconds
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             if (activeGame == game) {
+                val msgMgr = messageManager
                 game.getSeekers().forEach { uuid ->
                     Bukkit.getPlayer(uuid)?.let { player ->
                         player.sendViewDistance = 10 // Reset to default
-                        MessageUtil.send(player, "&aYou can now see and move!")
+                        msgMgr?.send(player, "game.seeker.can_move")
                     }
                 }
             }
@@ -960,34 +940,126 @@ class GameManager(
         game.phase = GamePhase.SEEKING
         game.phaseStartTime = System.currentTimeMillis()
 
-        broadcastToGame(game, "&e===[ Seeking Phase Started! ]===")
+        val msgMgr = messageManager
+        val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
+
+        msgMgr?.broadcast(allPlayers, "game.phase.seeking.broadcast")
+
+        // Apply darkness effect to all seekers (松明より少し先まで見える程度)
+        game.getSeekers().forEach { uuid ->
+            Bukkit.getPlayer(uuid)?.let { player ->
+                // Apply permanent darkness effect (lasts until removed)
+                player.addPotionEffect(
+                    PotionEffect(
+                        PotionEffectType.DARKNESS,
+                        Int.MAX_VALUE, // Permanent duration
+                        0, // Level 0 for moderate darkness
+                        false,
+                        false,
+                        false
+                    )
+                )
+                msgMgr?.send(player, "game.seeker.vision_restricted")
+            }
+        }
 
         // Start point accumulation for hiders
         val pointsPerSecond = configManager.config.getDouble("points.points-per-second", 1.0)
         val accumulationInterval = configManager.config.getInt("points.accumulation-interval", 15)
         pointManager?.startPointAccumulation(game, pointsPerSecond, (accumulationInterval * 20).toLong())
 
+        // Start periodic win condition check (every second)
         val seekTime = configManager.getSeekTime()
-        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+        val warnedTimes = mutableSetOf<Int>() // Track which warnings have been sent
+        val checkTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, {
             if (activeGame == game && game.phase == GamePhase.SEEKING) {
+                val elapsed = (System.currentTimeMillis() - game.phaseStartTime) / 1000
+                val remaining = seekTime - elapsed.toInt()
+
+                // Send warnings at specific times
+                val msgMgr = messageManager
+                val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
+
+                when (remaining) {
+                    60 -> {
+                        if (!warnedTimes.contains(60)) {
+                            msgMgr?.broadcast(allPlayers, "game.time.warning_1min")
+                            game.players.keys.forEach { uuid ->
+                                Bukkit.getPlayer(uuid)?.playSound(
+                                    Bukkit.getPlayer(uuid)!!.location,
+                                    org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING,
+                                    1.0f, 1.0f
+                                )
+                            }
+                            warnedTimes.add(60)
+                        }
+                    }
+                    30 -> {
+                        if (!warnedTimes.contains(30)) {
+                            msgMgr?.broadcast(allPlayers, "game.time.warning_30sec")
+                            game.players.keys.forEach { uuid ->
+                                Bukkit.getPlayer(uuid)?.playSound(
+                                    Bukkit.getPlayer(uuid)!!.location,
+                                    org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING,
+                                    1.0f, 1.2f
+                                )
+                            }
+                            warnedTimes.add(30)
+                        }
+                    }
+                    10 -> {
+                        if (!warnedTimes.contains(10)) {
+                            msgMgr?.broadcast(allPlayers, "game.time.warning_10sec")
+                            game.players.keys.forEach { uuid ->
+                                Bukkit.getPlayer(uuid)?.playSound(
+                                    Bukkit.getPlayer(uuid)!!.location,
+                                    org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING,
+                                    1.0f, 1.5f
+                                )
+                            }
+                            warnedTimes.add(10)
+                        }
+                    }
+                }
+
+                // Check win condition
                 val result = game.checkWinCondition(seekTime.toLong() * 1000) // Convert to milliseconds
                 if (result != null) {
                     endGame(result)
                 }
+            } else {
+                // Game ended or changed, cancel this task
+                game.winConditionCheckTaskId?.let { taskId ->
+                    Bukkit.getScheduler().cancelTask(taskId)
+                    game.winConditionCheckTaskId = null
+                }
             }
-        }, (seekTime * 20).toLong())
+        }, 20L, 20L) // Check every second (20 ticks)
+
+        game.winConditionCheckTaskId = checkTaskId
     }
 
     fun endGame(result: GameResult) {
         val game = activeGame ?: return
 
+        // Prevent multiple calls to endGame
+        if (game.phase == GamePhase.ENDED || game.phase == GamePhase.POST_GAME) {
+            return
+        }
+
         game.phase = GamePhase.ENDED
 
         // Stop scoreboard updates
-        gameScoreboard?.stopUpdating()
+        localizedScoreboard?.stopUpdating()
 
         // Stop point accumulation
         pointManager?.stopPointAccumulation()
+
+        // Cancel win condition check task
+        game.winConditionCheckTaskId?.let { taskId ->
+            Bukkit.getScheduler().cancelTask(taskId)
+            game.winConditionCheckTaskId = null
+        }
 
         // Cancel night skip task
         game.nightSkipTaskId?.let { taskId ->
@@ -1003,58 +1075,119 @@ class GameManager(
             GameResult.CANCELLED -> emptyList()
         }
 
+        val msgMgr = messageManager
+        val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
+
         // Show game end title to all players
-        game.players.keys.forEach { uuid ->
-            Bukkit.getPlayer(uuid)?.let { player ->
-                val resultTitle = when (result) {
-                    GameResult.CANCELLED -> {
-                        player.showTitle(
-                            net.kyori.adventure.title.Title.title(
-                                MessageUtil.colorize("&7&lゲーム中止"),
-                                MessageUtil.colorize("&7Game Cancelled"),
-                                net.kyori.adventure.title.Title.Times.times(
-                                    java.time.Duration.ofMillis(500),
-                                    java.time.Duration.ofMillis(3000),
-                                    java.time.Duration.ofMillis(1000)
-                                )
+        if (msgMgr != null) {
+            game.players.keys.forEach { uuid ->
+                Bukkit.getPlayer(uuid)?.let { player ->
+                    when (result) {
+                        GameResult.CANCELLED -> {
+                            msgMgr.sendTitle(
+                                player,
+                                "game.result.title.cancelled",
+                                "game.result.subtitle.cancelled",
+                                java.time.Duration.ofMillis(500),
+                                java.time.Duration.ofMillis(3000),
+                                java.time.Duration.ofMillis(1000)
                             )
-                        )
-                    }
-                    GameResult.SEEKER_WIN -> {
-                        player.showTitle(
-                            net.kyori.adventure.title.Title.title(
-                                MessageUtil.colorize("&e&lゲーム終了"),
-                                MessageUtil.colorize("&c全員鬼化！"),
-                                net.kyori.adventure.title.Title.Times.times(
-                                    java.time.Duration.ofMillis(500),
-                                    java.time.Duration.ofMillis(3000),
-                                    java.time.Duration.ofMillis(1000)
-                                )
+                        }
+                        GameResult.SEEKER_WIN -> {
+                            msgMgr.sendTitle(
+                                player,
+                                "game.result.title.ended",
+                                "game.result.subtitle.all_captured",
+                                java.time.Duration.ofMillis(500),
+                                java.time.Duration.ofMillis(3000),
+                                java.time.Duration.ofMillis(1000)
                             )
-                        )
-                        player.playSound(player.location, org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
-                    }
-                    GameResult.HIDER_WIN -> {
-                        player.showTitle(
-                            net.kyori.adventure.title.Title.title(
-                                MessageUtil.colorize("&e&lゲーム終了"),
-                                MessageUtil.colorize("&a時間切れ！"),
-                                net.kyori.adventure.title.Title.Times.times(
-                                    java.time.Duration.ofMillis(500),
-                                    java.time.Duration.ofMillis(3000),
-                                    java.time.Duration.ofMillis(1000)
-                                )
+                            player.playSound(player.location, org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
+                        }
+                        GameResult.HIDER_WIN -> {
+                            msgMgr.sendTitle(
+                                player,
+                                "game.result.title.ended",
+                                "game.result.subtitle.time_up",
+                                java.time.Duration.ofMillis(500),
+                                java.time.Duration.ofMillis(3000),
+                                java.time.Duration.ofMillis(1000)
                             )
-                        )
-                        player.playSound(player.location, org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
+                            player.playSound(player.location, org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
+                        }
                     }
                 }
             }
-        }
 
-        broadcastToGame(game, "&e===[ Game Over! ]===")
-        broadcastToGame(game, "&aResult: ${getResultMessage(result)}")
-        broadcastToGame(game, "")
+            msgMgr.broadcast(allPlayers, "game.result.broadcast_header")
+            val resultKey = when (result) {
+                GameResult.HIDER_WIN -> "game.result.message.hiders_win"
+                GameResult.SEEKER_WIN -> "game.result.message.seekers_win"
+                GameResult.CANCELLED -> "game.result.message.cancelled"
+            }
+            val resultMessage = msgMgr.getRawMessage(null, resultKey)
+            msgMgr.broadcast(allPlayers, "game.result.broadcast_result", resultMessage)
+        } else {
+            // Fallback
+            game.players.keys.forEach { uuid ->
+                Bukkit.getPlayer(uuid)?.let { player ->
+                    when (result) {
+                        GameResult.CANCELLED -> {
+                            player.showTitle(
+                                net.kyori.adventure.title.Title.title(
+                                    MessageUtil.colorize("&7&lゲーム中止"),
+                                    MessageUtil.colorize("&7Game Cancelled"),
+                                    net.kyori.adventure.title.Title.Times.times(
+                                        java.time.Duration.ofMillis(500),
+                                        java.time.Duration.ofMillis(3000),
+                                        java.time.Duration.ofMillis(1000)
+                                    )
+                                )
+                            )
+                        }
+                        GameResult.SEEKER_WIN -> {
+                            player.showTitle(
+                                net.kyori.adventure.title.Title.title(
+                                    MessageUtil.colorize("&e&lゲーム終了"),
+                                    MessageUtil.colorize("&c全員鬼化！"),
+                                    net.kyori.adventure.title.Title.Times.times(
+                                        java.time.Duration.ofMillis(500),
+                                        java.time.Duration.ofMillis(3000),
+                                        java.time.Duration.ofMillis(1000)
+                                    )
+                                )
+                            )
+                            player.playSound(player.location, org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
+                        }
+                        GameResult.HIDER_WIN -> {
+                            player.showTitle(
+                                net.kyori.adventure.title.Title.title(
+                                    MessageUtil.colorize("&e&lゲーム終了"),
+                                    MessageUtil.colorize("&a時間切れ！"),
+                                    net.kyori.adventure.title.Title.Times.times(
+                                        java.time.Duration.ofMillis(500),
+                                        java.time.Duration.ofMillis(3000),
+                                        java.time.Duration.ofMillis(1000)
+                                    )
+                                )
+                            )
+                            player.playSound(player.location, org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
+                        }
+                    }
+                }
+            }
+
+            val resultMessageKey = when (result) {
+                GameResult.HIDER_WIN -> "game.result.message.hiders_win"
+                GameResult.SEEKER_WIN -> "game.result.message.seekers_win"
+                GameResult.CANCELLED -> "game.result.message.cancelled"
+            }
+            msgMgr?.broadcast(allPlayers, "game.result.broadcast_header")
+            allPlayers.forEach { player ->
+                val resultMessage = msgMgr?.getMessage(player, resultMessageKey) ?: getResultMessage(result)
+                msgMgr?.send(player, "game.result.broadcast_result", resultMessage)
+            }
+        }
 
         displayStats(game)
         displayRankings(game)
@@ -1076,7 +1209,7 @@ class GameManager(
             activeGame = null
         }
 
-        broadcastToGame(game, "&7Thank you for playing!")
+        msgMgr?.broadcast(allPlayers, "game.result.thanks")
     }
 
     private fun getResultMessage(result: GameResult): String {
@@ -1088,11 +1221,14 @@ class GameManager(
     }
 
     private fun displayStats(game: Game) {
-        broadcastToGame(game, "&e--- Game Statistics ---")
+        val msgMgr = messageManager
+        val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
+
+        msgMgr?.broadcast(allPlayers, "game.stats.title")
 
         val duration = (System.currentTimeMillis() - game.startTime) / 1000
-        broadcastToGame(game, "&7Duration: ${duration}s")
-        broadcastToGame(game, "&7Total Captures: ${game.getCaptured().size}/${game.getHiders().size}")
+        msgMgr?.broadcast(allPlayers, "game.stats.duration", duration.toString())
+        msgMgr?.broadcast(allPlayers, "game.stats.total_captures", game.getCaptured().size.toString(), game.getHiders().size.toString())
 
         val topSeeker = game.players.values
             .filter { it.role == PlayerRole.SEEKER }
@@ -1100,92 +1236,73 @@ class GameManager(
 
         if (topSeeker != null && topSeeker.captureCount > 0) {
             Bukkit.getPlayer(topSeeker.uuid)?.let { player ->
-                broadcastToGame(game, "&7最多鬼化: ${player.name} (${topSeeker.captureCount}人鬼化)")
+                msgMgr?.broadcast(allPlayers, "game.stats.top_seeker", player.name, topSeeker.captureCount.toString())
             }
         }
-
-        broadcastToGame(game, "")
     }
 
     private fun displayRankings(game: Game) {
         val pointMgr = pointManager ?: return
 
-        // Debug: Log all player points
-        plugin.logger.info("[Rankings] === Player Points Debug ===")
-        game.players.values.forEach { playerData ->
-            val player = Bukkit.getPlayer(playerData.uuid)
-            plugin.logger.info("[Rankings] ${player?.name ?: playerData.uuid}: 人=${playerData.hiderPoints}, 鬼=${playerData.seekerPoints}, Total=${pointMgr.getPoints(playerData.uuid)}")
-        }
+        val msgMgr = messageManager
+        val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
 
-        broadcastToGame(game, "&e--- Individual Rankings ---")
-        broadcastToGame(game, "&7(Players can appear in both rankings)")
-        broadcastToGame(game, "")
+        msgMgr?.broadcast(allPlayers, "game.rankings.title")
+        msgMgr?.broadcast(allPlayers, "game.rankings.subtitle")
 
         // Human rankings - based on points earned as Human
-        broadcastToGame(game, "&a&l人間ランキング:")
+        msgMgr?.broadcast(allPlayers, "game.rankings.hider_title")
         val hiderRankings = pointMgr.getRankedPlayersByRolePoints(game, PlayerRole.HIDER)
 
         if (hiderRankings.isEmpty()) {
-            broadcastToGame(game, "&7  人間なし")
+            allPlayers.forEach { player ->
+                msgMgr?.send(player, "game.rankings.no_hiders")
+            }
         } else {
             hiderRankings.take(5).forEachIndexed { index, (uuid, points) ->
                 val player = Bukkit.getPlayer(uuid)
 
+                val medal = when (index) {
+                    0 -> "&6🥇"
+                    1 -> "&7🥈"
+                    2 -> "&c🥉"
+                    else -> "&7${index + 1}."
+                }
+
                 if (player != null) {
-                    val medal = when (index) {
-                        0 -> "&6🥇"
-                        1 -> "&7🥈"
-                        2 -> "&c🥉"
-                        else -> "&7${index + 1}."
-                    }
-                    broadcastToGame(game, "  $medal &f${player.name}: &e${points} points")
+                    msgMgr?.broadcast(allPlayers, "game.rankings.entry_online", medal, player.name, points.toString())
                 } else {
-                    // Show offline players too
-                    val medal = when (index) {
-                        0 -> "&6🥇"
-                        1 -> "&7🥈"
-                        2 -> "&c🥉"
-                        else -> "&7${index + 1}."
-                    }
-                    broadcastToGame(game, "  $medal &7[Offline]: &e${points} points")
+                    msgMgr?.broadcast(allPlayers, "game.rankings.entry_offline", medal, points.toString())
                 }
             }
         }
 
-        broadcastToGame(game, "")
-
         // Demon rankings - based on points earned as Demon
-        broadcastToGame(game, "&c&l鬼ランキング:")
+        msgMgr?.broadcast(allPlayers, "game.rankings.seeker_title")
         val seekerRankings = pointMgr.getRankedPlayersByRolePoints(game, PlayerRole.SEEKER)
 
         if (seekerRankings.isEmpty()) {
-            broadcastToGame(game, "&7  鬼なし")
+            allPlayers.forEach { player ->
+                msgMgr?.send(player, "game.rankings.no_seekers")
+            }
         } else {
             seekerRankings.take(5).forEachIndexed { index, (uuid, points) ->
                 val player = Bukkit.getPlayer(uuid)
 
+                val medal = when (index) {
+                    0 -> "&6🥇"
+                    1 -> "&7🥈"
+                    2 -> "&c🥉"
+                    else -> "&7${index + 1}."
+                }
+
                 if (player != null) {
-                    val medal = when (index) {
-                        0 -> "&6🥇"
-                        1 -> "&7🥈"
-                        2 -> "&c🥉"
-                        else -> "&7${index + 1}."
-                    }
-                    broadcastToGame(game, "  $medal &f${player.name}: &e${points} points")
+                    msgMgr?.broadcast(allPlayers, "game.rankings.entry_online", medal, player.name, points.toString())
                 } else {
-                    // Show offline players too
-                    val medal = when (index) {
-                        0 -> "&6🥇"
-                        1 -> "&7🥈"
-                        2 -> "&c🥉"
-                        else -> "&7${index + 1}."
-                    }
-                    broadcastToGame(game, "  $medal &7[Offline]: &e${points} points")
+                    msgMgr?.broadcast(allPlayers, "game.rankings.entry_offline", medal, points.toString())
                 }
             }
         }
-
-        broadcastToGame(game, "")
     }
 
     private fun restorePlayers(game: Game) {
@@ -1194,7 +1311,7 @@ class GameManager(
                 playerData.backup?.restore(player)
 
                 // Clear player's scoreboard
-                gameScoreboard?.removePlayer(player)
+                localizedScoreboard?.removePlayer(player)
             }
         }
 
@@ -1270,13 +1387,10 @@ class GameManager(
      * Try to start game with current waiting players
      */
     private fun tryStartGame() {
-        plugin.logger.info("[AutoRestart] tryStartGame() called with ${waitingPlayers.size} waiting players")
         val arena = arenaManager?.getRandomArena()
         if (arena != null) {
-            plugin.logger.info("[AutoRestart] Arena selected: ${arena.displayName}, starting countdown")
             startGameCountdown(arena, 3)
         } else {
-            plugin.logger.warning("[AutoRestart] No arenas available!")
             broadcastToWaiting("&cNo arenas available. Cannot start game.")
         }
     }
@@ -1288,14 +1402,12 @@ class GameManager(
      * @param seconds Countdown duration in seconds
      */
     private fun startGameCountdown(arena: Arena, seconds: Int) {
-        plugin.logger.info("[AutoRestart] Starting countdown from $seconds seconds")
         var remaining = seconds
 
         val countdownTask = object : Runnable {
             override fun run() {
                 if (remaining <= 0) {
                     // Start the game
-                    plugin.logger.info("[AutoRestart] Countdown finished, calling startGame()")
                     startGame(arena)
                     return
                 }
@@ -1359,13 +1471,13 @@ class GameManager(
                 transitionToWaiting(game)
             } else if (remaining % broadcastInterval == 0 || remaining <= 5) {
                 // Broadcast countdown message
-                broadcastToGame(game, "&e次のゲームまで &b$remaining &e秒...")
+                val msgMgr = messageManager
+                val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
+                msgMgr?.broadcast(allPlayers, "game.auto_restart.countdown", remaining.toString())
             }
         }, 0L, 20L) // Run every second (20 ticks)
 
         game.autoRestartTaskId = countdownTaskId
-
-        plugin.logger.info("Auto-restart timer started: ${countdownSeconds}s countdown")
     }
 
     /**
@@ -1377,7 +1489,6 @@ class GameManager(
         game.autoRestartTaskId?.let { taskId ->
             Bukkit.getScheduler().cancelTask(taskId)
             game.autoRestartTaskId = null
-            plugin.logger.info("Auto-restart timer cancelled")
         }
     }
 
@@ -1388,13 +1499,13 @@ class GameManager(
      * @param game The game to transition
      */
     private fun transitionToWaiting(game: Game) {
-        plugin.logger.info("[AutoRestart] Transitioning to WAITING phase")
-
         // Get previous players before clearing
         val previousPlayers = game.players.keys.toList()
 
         // Broadcast to players before destroying game
-        broadcastToGame(game, "&aゲームが終了しました。新しいゲームの準備中...")
+        val msgMgr = messageManager
+        val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
+        msgMgr?.broadcast(allPlayers, "game.auto_restart.ended")
 
         // Get active players (excluding spectators if available)
         val activePlayers = previousPlayers.mapNotNull { Bukkit.getPlayer(it) }
@@ -1407,18 +1518,11 @@ class GameManager(
 
         val minPlayers = configManager.getMinPlayers()
 
-        plugin.logger.info("[AutoRestart] Active players: ${activePlayers.size}, Min required: $minPlayers")
-        activePlayers.forEach { player ->
-            plugin.logger.info("[AutoRestart]   - ${player.name}")
-        }
-
         // IMPORTANT: Clear active game to create a fresh one
         activeGame = null
-        plugin.logger.info("[AutoRestart] Cleared activeGame, will create new Game object")
 
         if (activePlayers.size >= minPlayers) {
-            broadcastToServer("&a規定人数に達しました！ゲームを開始します...")
-            plugin.logger.info("[AutoRestart] Starting new game with ${activePlayers.size} players")
+            msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_restart.starting")
 
             // Add players back to waiting list
             waitingPlayers.clear()
@@ -1427,9 +1531,8 @@ class GameManager(
             // Start game with countdown (will create NEW game object)
             tryStartGame()
         } else {
-            broadcastToServer("&e参加プレイヤーが不足しています（${activePlayers.size}/${minPlayers}人）")
-            broadcastToServer("&e規定人数に達するまで待機します...")
-            plugin.logger.info("[AutoRestart] Insufficient players, waiting for more")
+            msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_restart.waiting_players", activePlayers.size.toString(), minPlayers.toString())
+            msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_restart.waiting_message")
 
             // Add available players to waiting list
             waitingPlayers.clear()

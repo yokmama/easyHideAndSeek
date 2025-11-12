@@ -20,6 +20,8 @@ class ShopManager(
     private val categoryKey: NamespacedKey = NamespacedKey(plugin, "shop_category")
     private val itemIdKey: NamespacedKey = NamespacedKey(plugin, "shop_item_id")
 
+    var messageManager: com.hideandseek.i18n.MessageManager? = null
+
     fun loadCategories() {
         categories.clear()
         val shopConfig = configManager.shop.getConfigurationSection("shop")
@@ -89,7 +91,14 @@ class ShopManager(
             player.sendMessage("§e[DEBUG] Category: ${cat.id}, roleFilter: ${cat.roleFilter}, slot: ${cat.slot}")
         }
 
-        val inventory = Bukkit.createInventory(null, 54, MessageUtil.colorize("&a&lShop Menu"))
+        // T050: Use localized shop title based on player role
+        val titleKey = when (playerRole?.uppercase()) {
+            "SEEKER" -> "shop.title.seeker"
+            "HIDER" -> "shop.title.hider"
+            else -> "shop.title.hider" // Default to hider shop
+        }
+        val title = messageManager?.getRawMessage(player, titleKey) ?: "&a&lShop Menu"
+        val inventory = Bukkit.createInventory(null, 54, MessageUtil.colorize(title))
 
         // T022: Filter categories by player role
         val visibleCategories = if (playerRole != null) {
@@ -125,8 +134,10 @@ class ShopManager(
             }
         }
 
+        // T052: Localized Close button
+        val closeButtonName = messageManager?.getRawMessage(player, "ui.button.close") ?: "&c&lClose"
         val closeButton = ItemBuilder(Material.BARRIER)
-            .displayName("&c&lClose")
+            .displayName(closeButtonName)
             .lore(listOf("&7Click to close"))
             .persistentData(itemIdKey, PersistentDataType.STRING, "close")
             .build()
@@ -190,15 +201,19 @@ class ShopManager(
             }
         }
 
+        // T052: Localized Back button
+        val backButtonName = messageManager?.getRawMessage(player, "ui.button.back") ?: "&e&lBack"
         val backButton = ItemBuilder(Material.ARROW)
-            .displayName("&e&lBack")
+            .displayName(backButtonName)
             .lore(listOf("&7Return to main menu"))
             .persistentData(itemIdKey, PersistentDataType.STRING, "back")
             .build()
         inventory.setItem(45, backButton)
 
+        // T052: Localized Close button
+        val closeButtonName = messageManager?.getRawMessage(player, "ui.button.close") ?: "&c&lClose"
         val closeButton = ItemBuilder(Material.BARRIER)
-            .displayName("&c&lClose")
+            .displayName(closeButtonName)
             .lore(listOf("&7Click to close"))
             .persistentData(itemIdKey, PersistentDataType.STRING, "close")
             .build()

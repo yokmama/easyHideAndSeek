@@ -13,7 +13,8 @@ data class Game(
     var worldBorderBackup: WorldBorderBackup? = null,
     var autoRestartTaskId: Int? = null,  // Auto-restart timer task ID
     var autoRestartStartTime: Long = 0L,  // When auto-restart countdown started
-    var nightSkipTaskId: Int? = null  // Night skip task ID
+    var nightSkipTaskId: Int? = null,  // Night skip task ID
+    var winConditionCheckTaskId: Int? = null  // Win condition check task ID
 ) {
     fun getSeekers(): List<UUID> {
         return players.filter { it.value.role == PlayerRole.SEEKER }.keys.toList()
