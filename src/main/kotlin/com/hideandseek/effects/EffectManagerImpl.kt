@@ -88,7 +88,16 @@ class EffectManagerImpl(
             // Apply visual/mechanical effect via handler
             // Pass effect with taskId so handlers can access it
             val handler = effectHandlers[effectType]
-            handler?.apply(player, effect)
+            player.sendMessage("§c[DEBUG] EffectManagerImpl: Applying effect $effectType")
+            player.sendMessage("§c[DEBUG] Handler found: ${handler != null}")
+            if (handler != null) {
+                player.sendMessage("§c[DEBUG] Handler class: ${handler.javaClass.simpleName}")
+                player.sendMessage("§c[DEBUG] Calling handler.apply()...")
+                handler.apply(player, effect)
+                player.sendMessage("§c[DEBUG] handler.apply() completed")
+            } else {
+                player.sendMessage("§c[DEBUG] No handler registered for $effectType!")
+            }
 
             // Store effect (after handler might have modified metadata)
             storage.putEffect(effect)

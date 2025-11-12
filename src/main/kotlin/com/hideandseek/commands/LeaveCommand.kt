@@ -1,14 +1,15 @@
 package com.hideandseek.commands
 
 import com.hideandseek.game.GameManager
-import com.hideandseek.utils.MessageUtil
+import com.hideandseek.i18n.MessageManager
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 
 class LeaveCommand(
-    private val gameManager: GameManager
+    private val gameManager: GameManager,
+    private val messageManager: MessageManager
 ) : CommandExecutor {
 
     override fun onCommand(
@@ -18,12 +19,12 @@ class LeaveCommand(
         args: Array<out String>
     ): Boolean {
         if (sender !is Player) {
-            MessageUtil.send(sender, "&cPlayer only")
+            messageManager.send(sender, "error.player_only")
             return true
         }
 
         if (!sender.hasPermission("hideandseek.play")) {
-            MessageUtil.send(sender, "&cNo permission")
+            messageManager.send(sender, "error.no_permission")
             return true
         }
 

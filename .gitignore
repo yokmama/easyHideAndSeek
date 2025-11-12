@@ -32,3 +32,4 @@ coverage/
 .gradle
 specs
 .claude
+.specify

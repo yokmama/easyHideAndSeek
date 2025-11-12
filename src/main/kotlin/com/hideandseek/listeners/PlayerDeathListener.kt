@@ -11,6 +11,7 @@ import org.bukkit.event.EventHandler
 import org.bukkit.event.EventPriority
 import org.bukkit.event.Listener
 import org.bukkit.event.entity.PlayerDeathEvent
+import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.plugin.Plugin
 
 /**
@@ -45,6 +46,13 @@ class PlayerDeathListener(
         if (!game.players.containsKey(victim.uniqueId)) {
             return
         }
+
+        // Keep inventory on death during game
+        event.keepInventory = true
+        event.keepLevel = true
+        event.drops.clear()
+        event.droppedExp = 0
+        plugin.logger.info("[ItemProtection] Keep inventory enabled for ${victim.name} (in-game death)")
 
         // Handle seeker vs seeker PK combat if applicable
         if (killer != null && game.players.containsKey(killer.uniqueId)) {
@@ -231,5 +239,57 @@ class PlayerDeathListener(
                 plugin.logger.info("[SeekerPK] ${victim.name} converted to SPECTATOR after being defeated by ${killer.name}")
             })
         }
+    }
+
+    /**
+     * Handle player respawn events to restore scoreboard and control respawn location
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    fun onPlayerRespawn(event: PlayerRespawnEvent) {
+        val player = event.player
+
+        // Check if player is in an active game
+        val game = gameManager.activeGame ?: return
+
+        // Check if this player is part of the game
+        if (!game.players.containsKey(player.uniqueId)) {
+            return
+        }
+
+        // Override respawn location to prevent default bed spawn behavior
+        // Find a safe respawn location within game boundaries
+        val respawnLocation = respawnManager.findSafeRandomLocation(
+            world = game.arena.world,
+            center = org.bukkit.Location(
+                game.arena.world,
+                game.arena.boundaries.center.x,
+                64.0,
+                game.arena.boundaries.center.z
+            ),
+            radius = 50,
+            boundaries = game.arena.boundaries
+        )
+
+        if (respawnLocation != null) {
+            // Set custom respawn location to override bed spawn
+            event.respawnLocation = respawnLocation
+            plugin.logger.info("[Respawn] Override respawn location for ${player.name} to prevent bed spawn at ${respawnLocation.blockX}, ${respawnLocation.blockY}, ${respawnLocation.blockZ}")
+        } else {
+            // Fallback to arena spawn if no safe location found
+            event.respawnLocation = org.bukkit.Location(
+                game.arena.world,
+                game.arena.boundaries.center.x,
+                64.0,
+                game.arena.boundaries.center.z
+            )
+            plugin.logger.warning("[Respawn] No safe location found, using arena center for ${player.name}")
+        }
+
+        // Restore scoreboard after respawn (delay to ensure player is fully loaded)
+        Bukkit.getScheduler().runTaskLater(plugin, Runnable {
+            val gameScoreboard = (plugin as? com.hideandseek.HideAndSeekPlugin)?.gameScoreboard
+            gameScoreboard?.addPlayer(player, game)
+            plugin.logger.info("[Scoreboard] Restored scoreboard for ${player.name} after respawn")
+        }, 1L)
     }
 }

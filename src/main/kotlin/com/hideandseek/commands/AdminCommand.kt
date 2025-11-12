@@ -2,7 +2,7 @@ package com.hideandseek.commands
 
 import com.hideandseek.arena.ArenaManager
 import com.hideandseek.game.GameManager
-import com.hideandseek.utils.MessageUtil
+import com.hideandseek.i18n.MessageManager
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
@@ -11,7 +11,8 @@ import org.bukkit.entity.Player
 
 class AdminCommand(
     private val arenaManager: ArenaManager,
-    private val gameManager: GameManager
+    private val gameManager: GameManager,
+    private val messageManager: MessageManager
 ) : CommandExecutor, TabCompleter {
 
     override fun onCommand(
@@ -21,7 +22,7 @@ class AdminCommand(
         args: Array<out String>
     ): Boolean {
         if (!sender.hasPermission("hideandseek.admin")) {
-            MessageUtil.send(sender, "&cNo permission")
+            messageManager.send(sender, "error.no_permission")
             return true
         }
 
@@ -37,6 +38,7 @@ class AdminCommand(
             "list" -> handleList(sender)
             "delete" -> handleDelete(sender, args)
             "start" -> handleStart(sender, args)
+            "reload" -> handleReload(sender)
             else -> sendHelp(sender)
         }
 
@@ -45,66 +47,75 @@ class AdminCommand(
 
     private fun handleSetPos1(sender: CommandSender) {
         if (sender !is Player) {
-            MessageUtil.send(sender, "&cPlayer only")
+            messageManager.send(sender, "error.player_only")
             return
         }
 
         arenaManager.setPos1(sender, sender.location)
-        MessageUtil.send(
+        messageManager.send(
             sender,
-            "&aPos1 set: X=${sender.location.blockX}, Y=${sender.location.blockY}, Z=${sender.location.blockZ}"
+            "admin.setpos1.success",
+            sender.location.blockX,
+            sender.location.blockY,
+            sender.location.blockZ
         )
     }
 
     private fun handleSetPos2(sender: CommandSender) {
         if (sender !is Player) {
-            MessageUtil.send(sender, "&cPlayer only")
+            messageManager.send(sender, "error.player_only")
             return
         }
 
         val session = arenaManager.getSetupSession(sender)
         arenaManager.setPos2(sender, sender.location)
 
-        MessageUtil.send(
+        messageManager.send(
             sender,
-            "&aPos2 set: X=${sender.location.blockX}, Y=${sender.location.blockY}, Z=${sender.location.blockZ}"
+            "admin.setpos2.success",
+            sender.location.blockX,
+            sender.location.blockY,
+            sender.location.blockZ
         )
 
         session?.pos1?.let { pos1 ->
             val distance = pos1.distance(sender.location)
-            MessageUtil.send(sender, "&7Area size: ${String.format("%.1f", distance)} blocks (diagonal)")
+            messageManager.send(sender, "admin.setpos2.distance", String.format("%.1f", distance))
         }
     }
 
     private fun handleCreateGame(sender: CommandSender, args: Array<out String>) {
         if (sender !is Player) {
-            MessageUtil.send(sender, "&cPlayer only")
+            messageManager.send(sender, "error.player_only")
             return
         }
 
         if (args.size < 2) {
-            MessageUtil.send(sender, "&cUsage: /hs admin creategame <name>")
+            messageManager.send(sender, "admin.creategame.usage")
             return
         }
 
         val name = args[1]
 
         if (!name.matches(Regex("[a-zA-Z0-9_-]+"))) {
-            MessageUtil.send(sender, "&cName can only contain alphanumeric characters, hyphens, and underscores")
+            messageManager.send(sender, "admin.creategame.invalid_name")
             return
         }
 
         try {
             val arena = arenaManager.createArena(sender, name)
-            MessageUtil.send(
+            messageManager.send(sender, "admin.creategame.success", name)
+            messageManager.send(sender, "admin.creategame.success.world", arena.world.name)
+            messageManager.send(sender, "admin.creategame.success.size", String.format("%.1f", arena.boundaries.size))
+            messageManager.send(
                 sender,
-                "&aArena '$name' created!",
-                "&7- World: ${arena.world.name}",
-                "&7- Size: ${String.format("%.1f", arena.boundaries.size)} blocks",
-                "&7- Center: ${arena.boundaries.center.blockX}, ${arena.boundaries.center.blockY}, ${arena.boundaries.center.blockZ}"
+                "admin.creategame.success.center",
+                arena.boundaries.center.blockX,
+                arena.boundaries.center.blockY,
+                arena.boundaries.center.blockZ
             )
         } catch (e: Exception) {
-            MessageUtil.send(sender, "&c${e.message}")
+            messageManager.send(sender, "admin.creategame.error", e.message ?: "Unknown error")
         }
     }
 
@@ -112,20 +123,20 @@ class AdminCommand(
         val arenas = arenaManager.getAllArenas()
 
         if (arenas.isEmpty()) {
-            MessageUtil.send(sender, "&7No arenas configured. Use /hs admin creategame to create one.")
+            messageManager.send(sender, "admin.list.empty")
             return
         }
 
-        MessageUtil.send(sender, "&e===[ Arenas ]===")
+        messageManager.send(sender, "admin.list.title")
         arenas.values.forEach { arena ->
-            MessageUtil.send(sender, "&a- ${arena.name} &7(${arena.world.name})")
+            messageManager.send(sender, "admin.list.item", arena.name, arena.world.name)
         }
-        MessageUtil.send(sender, "&7Total: ${arenas.size}")
+        messageManager.send(sender, "admin.list.total", arenas.size)
     }
 
     private fun handleDelete(sender: CommandSender, args: Array<out String>) {
         if (args.size < 2) {
-            MessageUtil.send(sender, "&cUsage: /hs admin delete <name>")
+            messageManager.send(sender, "admin.delete.usage")
             return
         }
 
@@ -133,18 +144,18 @@ class AdminCommand(
 
         try {
             if (arenaManager.deleteArena(name)) {
-                MessageUtil.send(sender, "&aArena '$name' deleted")
+                messageManager.send(sender, "admin.delete.success", name)
             } else {
-                MessageUtil.send(sender, "&cArena '$name' not found")
+                messageManager.send(sender, "admin.delete.not_found", name)
             }
         } catch (e: Exception) {
-            MessageUtil.send(sender, "&c${e.message}")
+            messageManager.send(sender, "admin.delete.error", e.message ?: "Unknown error")
         }
     }
 
     private fun handleStart(sender: CommandSender, args: Array<out String>) {
         if (args.size < 2) {
-            MessageUtil.send(sender, "&cUsage: /hs admin start <arena-name>")
+            messageManager.send(sender, "admin.start.usage")
             return
         }
 
@@ -152,42 +163,51 @@ class AdminCommand(
         val arena = arenaManager.getArena(arenaName)
 
         if (arena == null) {
-            MessageUtil.send(sender, "&cArena '$arenaName' not found. Use /hs admin list to see available arenas.")
+            messageManager.send(sender, "admin.start.arena_not_found", arenaName)
             return
         }
 
         if (gameManager.activeGame != null) {
-            MessageUtil.send(sender, "&cGame already in progress")
+            messageManager.send(sender, "admin.start.already_in_progress")
             return
         }
 
         val waitingCount = gameManager.getWaitingPlayers().size
         if (waitingCount < 2) {
-            MessageUtil.send(sender, "&cMinimum 2 players required (current: $waitingCount)")
+            messageManager.send(sender, "admin.start.min_players", waitingCount)
             return
         }
 
         val game = gameManager.startGame(arena)
         if (game != null) {
-            MessageUtil.send(sender, "&aGame started on arena '$arenaName'!")
-            MessageUtil.send(sender, "&7Players: $waitingCount")
-            MessageUtil.send(sender, "&7Seekers: ${game.getSeekers().size}, Hiders: ${game.getHiders().size}")
+            messageManager.send(sender, "admin.start.success", arenaName)
+            messageManager.send(sender, "admin.start.success.players", waitingCount)
+            messageManager.send(sender, "admin.start.success.teams", game.getSeekers().size, game.getHiders().size)
         } else {
-            MessageUtil.send(sender, "&cFailed to start game")
+            messageManager.send(sender, "admin.start.failed")
+        }
+    }
+
+    private fun handleReload(sender: CommandSender) {
+        try {
+            messageManager.reload()
+            val languages = messageManager.getAvailableLanguages().joinToString(", ")
+            messageManager.send(sender, "admin.reload.success")
+            messageManager.send(sender, "admin.reload.i18n_reloaded", languages)
+        } catch (e: Exception) {
+            messageManager.send(sender, "admin.reload.error", e.message ?: "Unknown error")
         }
     }
 
     private fun sendHelp(sender: CommandSender) {
-        MessageUtil.send(
-            sender,
-            "&e===[ Hide and Seek Admin ]===",
-            "&7/hs admin setpos1 &f- Set first corner",
-            "&7/hs admin setpos2 &f- Set second corner",
-            "&7/hs admin creategame <name> &f- Create arena",
-            "&7/hs admin list &f- List arenas",
-            "&7/hs admin delete <name> &f- Delete arena",
-            "&7/hs admin start <arena> &f- Start game"
-        )
+        messageManager.send(sender, "admin.help.title")
+        messageManager.send(sender, "admin.help.setpos1")
+        messageManager.send(sender, "admin.help.setpos2")
+        messageManager.send(sender, "admin.help.creategame")
+        messageManager.send(sender, "admin.help.list")
+        messageManager.send(sender, "admin.help.delete")
+        messageManager.send(sender, "admin.help.start")
+        messageManager.send(sender, "admin.help.reload")
     }
 
     override fun onTabComplete(
@@ -199,7 +219,7 @@ class AdminCommand(
         if (!sender.hasPermission("hideandseek.admin")) return emptyList()
 
         return when (args.size) {
-            1 -> listOf("setpos1", "setpos2", "creategame", "list", "delete", "start")
+            1 -> listOf("setpos1", "setpos2", "creategame", "list", "delete", "start", "reload")
                 .filter { it.startsWith(args[0].lowercase()) }
             2 -> when (args[0].lowercase()) {
                 "delete", "start" -> arenaManager.getArenaNames().filter { it.startsWith(args[1].lowercase()) }

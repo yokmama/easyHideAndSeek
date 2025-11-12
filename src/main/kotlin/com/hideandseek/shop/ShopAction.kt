@@ -15,6 +15,10 @@ sealed class ShopAction {
         val bonusPoints: Int,
         val material: Material   // Material to give to player
     ) : ShopAction()
+    data class GiveItem(
+        val material: Material,  // Material to give
+        val amount: Int          // Amount to give
+    ) : ShopAction()
     object GoBack : ShopAction()
     object Close : ShopAction()
 }

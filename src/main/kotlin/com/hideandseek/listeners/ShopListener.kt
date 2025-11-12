@@ -23,6 +23,7 @@ class ShopListener(
 ) : Listener {
 
     var disguiseManager: com.hideandseek.disguise.DisguiseManager? = null
+    var messageManager: com.hideandseek.i18n.MessageManager? = null
 
     @EventHandler(priority = EventPriority.HIGHEST)
     fun onInventoryClick(event: InventoryClickEvent) {
@@ -136,7 +137,13 @@ class ShopListener(
                 handleEffectItemPurchase(player, action, shopItem, playerRole, game.arena.name)
             }
             is ShopAction.UseTauntItem -> {
-                handleTauntItemPurchase(player, action, shopItem)
+                player.sendMessage("§c[Debug] ERROR: UseTauntItem action detected - this should not happen!")
+                player.sendMessage("§c[Debug] Item: ${shopItem.id}, tauntType: ${action.tauntType}")
+                // DO NOT call handleTauntItemPurchase - this is the old instant-use behavior
+                MessageUtil.send(player, "&cこのアイテムは古い形式です。管理者に連絡してください。")
+            }
+            is ShopAction.GiveItem -> {
+                handleGiveItemPurchase(player, action, shopItem)
             }
             is ShopAction.GoBack -> {
                 shopManager.openMainMenu(player, playerRole)
@@ -229,11 +236,13 @@ class ShopListener(
                     )
                     purchaseStorage.recordPurchase(record)
 
-                    // Success message
-                    MessageUtil.send(
-                        player,
-                        "&aアイテムを購入しました: &e${shopItem.displayName}"
-                    )
+                    // T053: Localized success message
+                    val msgMgr = messageManager
+                    if (msgMgr != null) {
+                        msgMgr.send(player, "shop.purchase.success", shopItem.displayName)
+                    } else {
+                        MessageUtil.send(player, "&aアイテムを購入しました: &e${shopItem.displayName}")
+                    }
                     MessageUtil.send(
                         player,
                         "&b${action.effectType.displayName} &aが適用されました（&e${action.duration}秒間&a）"
@@ -255,21 +264,36 @@ class ShopListener(
             }
 
         } catch (e: InsufficientFundsException) {
-            // T027: User-friendly error messages
-            MessageUtil.send(
-                player,
-                "&cお金が足りません。必要: &e${e.required} coins &c/ 所持: &e${e.actual.toInt()} coins"
-            )
+            // T054: Localized error messages
+            val msgMgr = messageManager
+            if (msgMgr != null) {
+                msgMgr.send(player, "shop.purchase.failed.insufficient", e.required, e.actual.toInt())
+            } else {
+                MessageUtil.send(
+                    player,
+                    "&cお金が足りません。必要: &e${e.required} coins &c/ 所持: &e${e.actual.toInt()} coins"
+                )
+            }
         } catch (e: PurchaseLimitException) {
-            MessageUtil.send(
-                player,
-                "&cこのアイテムは購入制限に達しています (${e.current}/${e.limit})"
-            )
+            val msgMgr = messageManager
+            if (msgMgr != null) {
+                msgMgr.send(player, "shop.purchase.failed.limit")
+            } else {
+                MessageUtil.send(
+                    player,
+                    "&cこのアイテムは購入制限に達しています (${e.current}/${e.limit})"
+                )
+            }
         } catch (e: CooldownException) {
-            MessageUtil.send(
-                player,
-                "&cクールダウン中です。残り時間: &e${e.remainingSeconds}秒"
-            )
+            val msgMgr = messageManager
+            if (msgMgr != null) {
+                msgMgr.send(player, "shop.purchase.failed.cooldown", e.remainingSeconds)
+            } else {
+                MessageUtil.send(
+                    player,
+                    "&cクールダウン中です。残り時間: &e${e.remainingSeconds}秒"
+                )
+            }
         } catch (e: InventoryFullException) {
             MessageUtil.send(player, "&cインベントリがいっぱいです")
         } catch (e: RoleRestrictionException) {
@@ -355,5 +379,52 @@ class ShopListener(
         meta.addEffect(effect)
         meta.power = 1
         firework.fireworkMeta = meta
+    }
+
+    /**
+     * Handle giving items to player's inventory
+     */
+    private fun handleGiveItemPurchase(player: Player, action: ShopAction.GiveItem, shopItem: ShopItem) {
+        player.sendMessage("§b[Debug] GiveItem action triggered: ${action.material} x${action.amount}")
+
+        try {
+            // Check if player has enough coins
+            val price = shopItem.getEffectivePrice()
+            val pointMgr = gameManager.pointManager
+            if (pointMgr == null) {
+                MessageUtil.send(player, "&cポイントシステムが利用できません")
+                return
+            }
+
+            val currentPoints = pointMgr.getPoints(player.uniqueId)
+            if (currentPoints < price) {
+                MessageUtil.send(player, "&c購入に失敗しました - コインが足りません")
+                MessageUtil.send(player, "&7必要: &e${price} &7/ 所持: &e${currentPoints}")
+                return
+            }
+
+            // Deduct points (use negative value with addPoints)
+            pointMgr.addPoints(player.uniqueId, -price)
+
+            // Give items to player
+            val itemStack = org.bukkit.inventory.ItemStack(action.material, action.amount)
+            val remaining = player.inventory.addItem(itemStack)
+
+            if (remaining.isEmpty()) {
+                MessageUtil.send(player, "&a${shopItem.displayName} &7を &e${action.amount}個 &7購入しました！")
+                MessageUtil.send(player, "&7-${price} コイン &7(残り: &e${currentPoints - price}&7)")
+                player.playSound(player.location, org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f)
+            } else {
+                // Inventory full - refund
+                pointMgr.addPoints(player.uniqueId, price)
+                MessageUtil.send(player, "&cインベントリがいっぱいです")
+            }
+
+            player.closeInventory()
+        } catch (e: Exception) {
+            plugin.logger.warning("Error purchasing item: ${e.message}")
+            e.printStackTrace()
+            MessageUtil.send(player, "&c購入処理中にエラーが発生しました")
+        }
     }
 }

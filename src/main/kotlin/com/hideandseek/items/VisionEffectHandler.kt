@@ -18,6 +18,9 @@ class VisionEffectHandler : EffectHandler {
         // Store original view distance for restoration
         val originalViewDistance = player.clientViewDistance
 
+        // IMPORTANT: Remove DARKNESS effect first (Seekers have this by default)
+        player.removePotionEffect(PotionEffectType.DARKNESS)
+
         // Apply Night Vision potion effect
         val duration = effect.getTotalDuration().toInt() * 20 // Convert to ticks
         val nightVision = PotionEffect(
@@ -60,6 +63,18 @@ class VisionEffectHandler : EffectHandler {
             // Fallback to server default (usually 10)
             player.sendViewDistance = 10
         }
+
+        // IMPORTANT: Re-apply DARKNESS effect for Seekers
+        // Check if player is still a Seeker in an active game
+        val darkness = PotionEffect(
+            PotionEffectType.DARKNESS,
+            Int.MAX_VALUE, // Permanent duration
+            0, // Level 0 for moderate darkness
+            false,
+            false,
+            false
+        )
+        player.addPotionEffect(darkness)
 
         // Feedback message
         player.sendMessage("§7視界拡大の効果が切れました")

@@ -20,32 +20,48 @@ class EntityDamageByEntityListener(
 
     @EventHandler
     fun onEntityDamageByEntity(event: EntityDamageByEntityEvent) {
-        val attacker = event.damager as? Player ?: return
         val victim = event.entity as? Player ?: return
+
+        // Get actual attacker (handle projectiles like arrows)
+        val attacker = when (val damager = event.damager) {
+            is Player -> damager
+            is org.bukkit.entity.Projectile -> damager.shooter as? Player
+            else -> null
+        } ?: return
 
         val game = gameManager.activeGame ?: return
 
         val attackerData = game.players[attacker.uniqueId] ?: return
         val victimData = game.players[victim.uniqueId] ?: return
 
-        // Check if attacker is seeker
-        if (attackerData.role != PlayerRole.SEEKER) {
+        // Combat Rules:
+        // 1. Seeker → Seeker: Allow damage (PK for reverting to Hider)
+        // 2. Seeker → Hider: No damage, capture only
+        // 3. Hider → Seeker: No damage, cancel
+        // 4. Hider → Hider: No damage, cancel
+
+        // Rule 3 & 4: Hiders cannot deal damage to anyone
+        if (attackerData.role == PlayerRole.HIDER) {
             event.isCancelled = true
+            // Only show message if attacking a Seeker (not other Hiders)
+            if (victimData.role == PlayerRole.SEEKER) {
+                MessageUtil.send(attacker, "&c人間は鬼にダメージを与えられません")
+            }
             return
         }
 
-        // Handle seeker vs seeker combat (NEW - allow real damage for PK)
-        if (victimData.role == PlayerRole.SEEKER) {
+        // Rule 1: Seeker → Seeker combat (allow real damage for PK)
+        if (attackerData.role == PlayerRole.SEEKER && victimData.role == PlayerRole.SEEKER) {
             // Allow real damage between seekers (do NOT cancel event)
             // The actual combat result will be handled in PlayerDeathListener
             plugin.logger.info("[SeekerCombat] ${attacker.name} is attacking ${victim.name} (seeker vs seeker PK)")
             return
         }
 
-        // Cancel event for seeker vs hider (instant capture, no damage)
+        // Rule 2: Seeker → Hider (instant capture, no damage)
         event.isCancelled = true
 
-        // Handle seeker vs hider (existing logic)
+        // Handle seeker vs hider capture
         if (victimData.role != PlayerRole.HIDER) {
             return
         }
