@@ -333,7 +333,6 @@ class HideAndSeekPlugin : JavaPlugin() {
         pluginManager.registerEvents(playerMoveListener, this)
         pluginManager.registerEvents(BlockDamageListener(disguiseManager, gameManager), this)
         pluginManager.registerEvents(EntityDamageByEntityListener(disguiseManager, gameManager, pointManager, this), this)
-        pluginManager.registerEvents(BoundaryListener(gameManager), this)
         pluginManager.registerEvents(effectCleanupListener, this)
         pluginManager.registerEvents(playerJoinListener, this)
         pluginManager.registerEvents(spectatorEventListener, this)
