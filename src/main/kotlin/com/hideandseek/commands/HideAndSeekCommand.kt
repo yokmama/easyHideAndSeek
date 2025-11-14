@@ -11,6 +11,9 @@ class HideAndSeekCommand(
     private val shopCommand: ShopCommand,
     private val spectatorCommand: SpectatorCommand,
     private val langCommand: LangCommand,
+    private val creategameCommand: CreategameCommand,
+    private val listCommand: ListCommand,
+    private val startCommand: StartCommand,
     private val messageManager: MessageManager
 ) : CommandExecutor, TabCompleter {
 
@@ -30,6 +33,9 @@ class HideAndSeekCommand(
             "spectator" -> spectatorCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "lang", "language" -> langCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             "admin" -> adminCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
+            "creategame" -> creategameCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
+            "list" -> listCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
+            "start" -> startCommand.onCommand(sender, command, label, args.drop(1).toTypedArray())
             else -> sendHelp(sender)
         }
 
@@ -48,6 +54,10 @@ class HideAndSeekCommand(
 
         if (sender.hasPermission("hideandseek.admin")) {
             messageManager.send(sender, "command.help.admin")
+            messageManager.send(sender, "command.help.admin.creategame")
+            messageManager.send(sender, "command.help.admin.creategame_pos")
+            messageManager.send(sender, "command.help.admin.list")
+            messageManager.send(sender, "command.help.admin.start")
         }
     }
 
@@ -63,21 +73,19 @@ class HideAndSeekCommand(
                 subcommands.add("spectator")
             }
             if (sender.hasPermission("hideandseek.admin")) {
-                subcommands.add("admin")
+                subcommands.addAll(listOf("admin", "creategame", "list", "start"))
             }
             return subcommands.filter { it.startsWith(args[0].lowercase()) }
         }
 
-        if (args.size > 1 && args[0].lowercase() == "admin") {
-            return adminCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
-        }
-
-        if (args.size > 1 && args[0].lowercase() == "spectator") {
-            return spectatorCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
-        }
-
-        if (args.size > 1 && (args[0].lowercase() == "lang" || args[0].lowercase() == "language")) {
-            return langCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
+        if (args.size > 1) {
+            return when (args[0].lowercase()) {
+                "admin" -> adminCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
+                "spectator" -> spectatorCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
+                "lang", "language" -> langCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
+                "start" -> startCommand.onTabComplete(sender, command, alias, args.drop(1).toTypedArray())
+                else -> null
+            }
         }
 
         return null

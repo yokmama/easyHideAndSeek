@@ -31,6 +31,7 @@ class GameManager(
     var gameScoreboard: com.hideandseek.scoreboard.GameScoreboard? = null
     var localizedScoreboard: com.hideandseek.scoreboard.LocalizedScoreboardManager? = null
     var seekerStrengthManager: com.hideandseek.strength.SeekerStrengthManager? = null
+    var blockRestorationManager: com.hideandseek.blockrestoration.BlockRestorationManager? = null
 
     fun joinGame(player: Player): Boolean {
         val uuid = player.uniqueId
@@ -140,7 +141,7 @@ class GameManager(
             count.toString()
         )
 
-        // Check if we have enough players to auto-start
+        // Check if max players reached (auto-start)
         checkAutoStart()
 
         return true
@@ -1067,6 +1068,14 @@ class GameManager(
             game.nightSkipTaskId = null
         }
 
+        // Clear block restoration tracking for this game
+        blockRestorationManager?.let { manager ->
+            val clearedCount = manager.clearGameBlocks(game.id)
+            if (clearedCount > 0) {
+                plugin.logger.info("[Game] Cleared $clearedCount tracked blocks for game ${game.id}")
+            }
+        }
+
         disguiseManager?.clearAllDisguises()
 
         val winners = when (result) {
@@ -1351,6 +1360,7 @@ class GameManager(
 
     /**
      * Check if auto-start conditions are met and start game if so
+     * Auto-starts when max-players is reached
      */
     private fun checkAutoStart() {
         // Don't auto-start if game is already in progress
@@ -1358,8 +1368,8 @@ class GameManager(
             return
         }
 
-        val minPlayers = configManager.getMinPlayers()
-        if (waitingPlayers.size >= minPlayers) {
+        val maxPlayers = configManager.getMaxPlayers()
+        if (waitingPlayers.size >= maxPlayers) {
             // Select random arena
             val arena = arenaManager?.getRandomArena()
             if (arena == null) {
@@ -1367,7 +1377,11 @@ class GameManager(
                 return
             }
 
-            broadcastToWaiting("&aStarting game on arena: &e${arena.displayName}")
+            messageManager?.broadcast(
+                waitingPlayers.mapNotNull { Bukkit.getPlayer(it) },
+                "game.auto_start.max_players",
+                maxPlayers.toString()
+            )
 
             // Start countdown with title
             startGameCountdown(arena, 3)
@@ -1517,26 +1531,26 @@ class GameManager(
             }
 
         val minPlayers = configManager.getMinPlayers()
+        val maxPlayers = configManager.getMaxPlayers()
 
         // IMPORTANT: Clear active game to create a fresh one
         activeGame = null
 
-        if (activePlayers.size >= minPlayers) {
-            msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_restart.starting")
+        // Add available players to waiting list
+        waitingPlayers.clear()
+        activePlayers.forEach { waitingPlayers.add(it.uniqueId) }
 
-            // Add players back to waiting list
-            waitingPlayers.clear()
-            activePlayers.forEach { waitingPlayers.add(it.uniqueId) }
-
-            // Start game with countdown (will create NEW game object)
-            tryStartGame()
-        } else {
+        // Check if we have enough players
+        if (activePlayers.size < minPlayers) {
             msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_restart.waiting_players", activePlayers.size.toString(), minPlayers.toString())
             msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_restart.waiting_message")
-
-            // Add available players to waiting list
-            waitingPlayers.clear()
-            activePlayers.forEach { waitingPlayers.add(it.uniqueId) }
+        } else if (activePlayers.size >= maxPlayers) {
+            // Only auto-start if max players is reached
+            msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_start.max_players", maxPlayers.toString())
+            tryStartGame()
+        } else {
+            // Between min and max: wait for admin to start or more players to join
+            msgMgr?.broadcast(Bukkit.getOnlinePlayers().toList(), "game.auto_restart.ready_to_start", activePlayers.size.toString(), minPlayers.toString(), maxPlayers.toString())
         }
     }
 

@@ -2,9 +2,9 @@
 
 general:
   language: "ja_JP"
-  auto-start: true
-  min-players: 2
-  max-players: 30
+  auto-start: false        # DEPRECATED: No longer used (max-players triggers auto-start)
+  min-players: 2           # Minimum players required to start game manually (/hs start)
+  max-players: 30          # Maximum players - auto-starts game when this number is reached
 
 game:
   preparation-time: 30      # Preparation time in seconds

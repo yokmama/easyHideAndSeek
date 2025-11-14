@@ -2,10 +2,7 @@ package com.hideandseek
 
 import com.hideandseek.arena.ArenaManager
 import com.hideandseek.blockrestoration.BlockRestorationManager
-import com.hideandseek.commands.AdminCommand
-import com.hideandseek.commands.HideAndSeekCommand
-import com.hideandseek.commands.JoinCommand
-import com.hideandseek.commands.LeaveCommand
+import com.hideandseek.commands.*
 import com.hideandseek.config.BlockRestorationConfig
 import com.hideandseek.config.ConfigManager
 import com.hideandseek.disguise.DisguiseManager
@@ -231,6 +228,7 @@ class HideAndSeekPlugin : JavaPlugin() {
         gameManager.gameScoreboard = gameScoreboard
         gameManager.localizedScoreboard = localizedScoreboard
         gameManager.seekerStrengthManager = seekerStrengthManager
+        gameManager.blockRestorationManager = blockRestorationManager
 
         // T055: Set messageManager in shopManager for localization
         shopManager.messageManager = messageManager
@@ -291,11 +289,26 @@ class HideAndSeekPlugin : JavaPlugin() {
     private fun registerCommands() {
         logger.info("Registering commands...")
 
-        val shopCommand = com.hideandseek.commands.ShopCommand(shopManager, gameManager, messageManager)
+        // Create command instances
+        val shopCommand = ShopCommand(shopManager, gameManager, messageManager)
         val adminCommand = AdminCommand(arenaManager, gameManager, messageManager)
-        val spectatorCommand = com.hideandseek.commands.SpectatorCommand(spectatorManager, gameManager)
-        val langCommand = com.hideandseek.commands.LangCommand(languagePreferenceManager, messageManager)
-        val mainCommand = HideAndSeekCommand(adminCommand, shopCommand, spectatorCommand, langCommand, messageManager)
+        val spectatorCommand = SpectatorCommand(spectatorManager, gameManager)
+        val langCommand = LangCommand(languagePreferenceManager, messageManager)
+        val creategameCommand = CreategameCommand(arenaManager, messageManager)
+        val listCommand = ListCommand(arenaManager, messageManager)
+        val startCommand = StartCommand(arenaManager, gameManager, messageManager)
+
+        // Register main command with all subcommands
+        val mainCommand = HideAndSeekCommand(
+            adminCommand,
+            shopCommand,
+            spectatorCommand,
+            langCommand,
+            creategameCommand,
+            listCommand,
+            startCommand,
+            messageManager
+        )
 
         val command = getCommand("hideandseek")
         if (command == null) {
@@ -307,7 +320,7 @@ class HideAndSeekPlugin : JavaPlugin() {
         command.tabCompleter = mainCommand
 
         logger.info("Command 'hideandseek' (alias: 'hs') registered successfully")
-        logger.info("Available subcommands: shop, lang, spectator, admin")
+        logger.info("Subcommands: shop, lang, spectator, creategame, list, start")
         logger.info("Auto-join enabled: Players automatically join game on login")
     }
 

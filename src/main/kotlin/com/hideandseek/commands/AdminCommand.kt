@@ -154,33 +154,45 @@ class AdminCommand(
     }
 
     private fun handleStart(sender: CommandSender, args: Array<out String>) {
-        if (args.size < 2) {
-            messageManager.send(sender, "admin.start.usage")
-            return
-        }
-
-        val arenaName = args[1]
-        val arena = arenaManager.getArena(arenaName)
-
-        if (arena == null) {
-            messageManager.send(sender, "admin.start.arena_not_found", arenaName)
-            return
-        }
-
+        // Check if game is already running
         if (gameManager.activeGame != null) {
             messageManager.send(sender, "admin.start.already_in_progress")
             return
         }
 
+        // Get arena: use specified name or random
+        val arena = if (args.size >= 2) {
+            val arenaName = args[1]
+            val specifiedArena = arenaManager.getArena(arenaName)
+
+            if (specifiedArena == null) {
+                messageManager.send(sender, "admin.start.arena_not_found", arenaName)
+                return
+            }
+            specifiedArena
+        } else {
+            // No arena specified, choose random
+            val randomArena = arenaManager.getRandomArena()
+            if (randomArena == null) {
+                messageManager.send(sender, "admin.start.no_arenas")
+                return
+            }
+            messageManager.send(sender, "admin.start.random_arena", randomArena.displayName)
+            randomArena
+        }
+
+        // Check minimum players
         val waitingCount = gameManager.getWaitingPlayers().size
-        if (waitingCount < 2) {
-            messageManager.send(sender, "admin.start.min_players", waitingCount)
+        val minPlayers = gameManager.configManager.getMinPlayers()
+        if (waitingCount < minPlayers) {
+            messageManager.send(sender, "admin.start.min_players", waitingCount, minPlayers)
             return
         }
 
+        // Start game
         val game = gameManager.startGame(arena)
         if (game != null) {
-            messageManager.send(sender, "admin.start.success", arenaName)
+            messageManager.send(sender, "admin.start.success", arena.displayName)
             messageManager.send(sender, "admin.start.success.players", waitingCount)
             messageManager.send(sender, "admin.start.success.teams", game.getSeekers().size, game.getHiders().size)
         } else {
