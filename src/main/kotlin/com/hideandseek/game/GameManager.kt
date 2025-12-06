@@ -642,6 +642,13 @@ class GameManager(
         val config = com.hideandseek.config.ShopConfig(shopConfig)
         val slot = config.getShopItemSlot()
 
+        // Remove any existing shop items first to prevent duplicates
+        player.inventory.contents.forEachIndexed { index, item ->
+            if (shopMgr.isShopItem(item)) {
+                player.inventory.setItem(index, null)
+            }
+        }
+
         val shopItem = shopMgr.createShopItem()
         player.inventory.setItem(slot, shopItem)
     }
@@ -713,7 +720,10 @@ class GameManager(
                     }
                 }
 
-                // Give shop item
+                // Clear inventory before giving new shop item (remove old hider items)
+                captured.inventory.clear()
+
+                // Give shop item for new role (seeker)
                 giveShopItemToPlayer(captured)
 
                 messageManager?.send(captured, "game.spectator.captured_infection", capturer.name)

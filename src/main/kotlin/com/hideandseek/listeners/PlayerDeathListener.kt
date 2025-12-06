@@ -287,11 +287,15 @@ class PlayerDeathListener(
             plugin.logger.warning("[Respawn] No safe location found, using arena center for ${player.name}")
         }
 
-        // Restore scoreboard after respawn (delay to ensure player is fully loaded)
+        // Restore scoreboard and shop item after respawn (delay to ensure player is fully loaded)
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
             val gameScoreboard = (plugin as? com.hideandseek.HideAndSeekPlugin)?.gameScoreboard
             gameScoreboard?.addPlayer(player, game)
             plugin.logger.info("[Scoreboard] Restored scoreboard for ${player.name} after respawn")
+
+            // Restore shop item after respawn
+            gameManager.giveShopItemToPlayer(player)
+            plugin.logger.info("[ShopItem] Restored shop item for ${player.name} after respawn")
         }, 1L)
     }
 }
