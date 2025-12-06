@@ -289,33 +289,61 @@ class PlayerDeathListener(
             plugin.logger.warning("[Respawn] No safe location found, using arena center for ${player.name}")
         }
 
-        // Restore scoreboard and shop item after respawn (delay to ensure player is fully loaded)
+        // Restore all game state after respawn (delay to ensure player is fully loaded)
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
-            // Use localizedScoreboard (main scoreboard manager with update task)
-            // instead of gameScoreboard to ensure player is included in the update loop
-            val localizedScoreboard = (plugin as? com.hideandseek.HideAndSeekPlugin)?.localizedScoreboard
-            localizedScoreboard?.addPlayer(player, game)
-            plugin.logger.info("[Scoreboard] Restored scoreboard for ${player.name} after respawn")
-
-            // Restore shop item after respawn
-            gameManager.giveShopItemToPlayer(player)
-            plugin.logger.info("[ShopItem] Restored shop item for ${player.name} after respawn")
-
-            // Restore Seeker vision restriction (DARKNESS effect) after respawn
-            val playerData = game.players[player.uniqueId]
-            if (playerData?.role == PlayerRole.SEEKER) {
-                player.addPotionEffect(
-                    PotionEffect(
-                        PotionEffectType.DARKNESS,
-                        Int.MAX_VALUE, // Permanent duration
-                        0, // Level 0 for moderate darkness
-                        false,
-                        false,
-                        false
-                    )
-                )
-                plugin.logger.info("[SeekerEffect] Restored DARKNESS effect for ${player.name} after respawn")
-            }
+            restorePlayerGameState(player, game)
         }, 1L)
+    }
+
+    /**
+     * Restore all game-related state for a player after respawn.
+     * This ensures the player is in the same state as when the game started.
+     */
+    private fun restorePlayerGameState(player: org.bukkit.entity.Player, game: com.hideandseek.game.Game) {
+        val playerData = game.players[player.uniqueId] ?: return
+
+        // 1. Restore health, food, and saturation (same as game start)
+        player.health = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH)?.value ?: 20.0
+        player.foodLevel = 20
+        player.saturation = 20f
+        plugin.logger.info("[Respawn] Restored health/food/saturation for ${player.name}")
+
+        // 2. Restore scoreboard
+        val localizedScoreboard = (plugin as? com.hideandseek.HideAndSeekPlugin)?.localizedScoreboard
+        localizedScoreboard?.addPlayer(player, game)
+        plugin.logger.info("[Respawn] Restored scoreboard for ${player.name}")
+
+        // 3. Restore shop item
+        gameManager.giveShopItemToPlayer(player)
+        plugin.logger.info("[Respawn] Restored shop item for ${player.name}")
+
+        // 4. Restore role-specific effects
+        when (playerData.role) {
+            PlayerRole.SEEKER -> {
+                // Seekers get permanent DARKNESS effect during seek phase
+                if (game.phase == com.hideandseek.game.GamePhase.SEEKING) {
+                    player.addPotionEffect(
+                        PotionEffect(
+                            PotionEffectType.DARKNESS,
+                            Int.MAX_VALUE,
+                            0,
+                            false,
+                            false,
+                            false
+                        )
+                    )
+                    plugin.logger.info("[Respawn] Restored DARKNESS effect for Seeker ${player.name}")
+                }
+            }
+            PlayerRole.HIDER -> {
+                // Hiders have no special effects by default
+                // If they were disguised, that state is lost on death (intentional)
+                plugin.logger.info("[Respawn] Hider ${player.name} respawned (no special effects)")
+            }
+            PlayerRole.SPECTATOR -> {
+                // Spectators should not respawn through this flow
+                plugin.logger.warning("[Respawn] Spectator ${player.name} went through respawn flow unexpectedly")
+            }
+        }
     }
 }
