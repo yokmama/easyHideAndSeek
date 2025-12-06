@@ -61,6 +61,48 @@ shop:
 
   # Category Configuration
   categories:
+    # Common Items Category (Both Seeker and Hider)
+    common-items:
+      display-name: "&f共通アイテム"
+      icon: BREAD
+      slot: 14
+      role-filter: "ALL"
+      description:
+        - "&7誰でも購入可能なアイテム"
+
+      items:
+        bread:
+          material: BREAD
+          display-name: "&6パン"
+          slot: 10
+          price: 50
+          lore:
+            - "&7空腹を満たす"
+            - "&a満腹度を回復"
+            - ""
+            - "&e価格: &650 coins"
+          item-type: "EQUIPMENT"
+          item-material: "BREAD"
+          item-amount: 3
+          role-filter: "ALL"
+          usage-restriction: "IN_GAME_ONLY"
+
+        golden-apple:
+          material: GOLDEN_APPLE
+          display-name: "&6金のリンゴ"
+          slot: 11
+          price: 300
+          lore:
+            - "&7体力と満腹度を大幅に回復"
+            - "&a+吸収ハート"
+            - ""
+            - "&e価格: &6300 coins"
+          item-type: "EQUIPMENT"
+          item-material: "GOLDEN_APPLE"
+          item-amount: 1
+          role-filter: "ALL"
+          usage-restriction: "IN_GAME_ONLY"
+
     # Seeker Items Category
     seeker-items:
       display-name: "&cSeeker Tools"

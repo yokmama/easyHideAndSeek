@@ -16,7 +16,9 @@ data class ShopCategory(
      * @return true if category should be shown
      */
     fun isVisibleTo(role: String): Boolean {
-        return roleFilter == null || roleFilter.equals(role, ignoreCase = true)
+        return roleFilter == null ||
+               roleFilter.equals("ALL", ignoreCase = true) ||
+               roleFilter.equals(role, ignoreCase = true)
     }
 
     /**
@@ -26,7 +28,9 @@ data class ShopCategory(
      */
     fun getItemsForRole(role: String): List<ShopItem> {
         return items.filter { item ->
-            item.roleFilter == null || item.roleFilter.equals(role, ignoreCase = true)
+            item.roleFilter == null ||
+            item.roleFilter.equals("ALL", ignoreCase = true) ||
+            item.roleFilter.equals(role, ignoreCase = true)
         }
     }
 
