@@ -17,6 +17,17 @@ class TrackerInsightHandler : ItemEffectHandler {
         // Track last movement time for each player: playerId -> timestamp
         private val lastMovementTimes = mutableMapOf<java.util.UUID, Long>()
 
+        // Track when tracking started for each player (game start time)
+        private var gameStartTime: Long = 0L
+
+        /**
+         * Initialize tracking for a new game
+         */
+        fun initializeForGame() {
+            gameStartTime = System.currentTimeMillis()
+            lastMovementTimes.clear()
+        }
+
         /**
          * Update movement time for a player
          */
@@ -26,10 +37,21 @@ class TrackerInsightHandler : ItemEffectHandler {
 
         /**
          * Get seconds since last movement
+         * If player has never moved, returns time since game started
          */
         fun getSecondsSinceMovement(playerId: java.util.UUID): Long {
-            val lastTime = lastMovementTimes[playerId] ?: return 0L
-            return (System.currentTimeMillis() - lastTime) / 1000
+            val lastTime = lastMovementTimes[playerId]
+            return if (lastTime != null) {
+                (System.currentTimeMillis() - lastTime) / 1000
+            } else {
+                // Player has never moved - return time since game started
+                if (gameStartTime > 0) {
+                    (System.currentTimeMillis() - gameStartTime) / 1000
+                } else {
+                    // Fallback: assume they've been stationary for a long time
+                    999L
+                }
+            }
         }
 
         /**
@@ -37,6 +59,7 @@ class TrackerInsightHandler : ItemEffectHandler {
          */
         fun clearAll() {
             lastMovementTimes.clear()
+            gameStartTime = 0L
         }
     }
 

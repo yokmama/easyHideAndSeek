@@ -941,6 +941,9 @@ class GameManager(
         game.phase = GamePhase.SEEKING
         game.phaseStartTime = System.currentTimeMillis()
 
+        // Initialize tracker insight for this game
+        com.hideandseek.items.TrackerInsightHandler.initializeForGame()
+
         val msgMgr = messageManager
         val allPlayers = game.players.keys.mapNotNull { Bukkit.getPlayer(it) }
 

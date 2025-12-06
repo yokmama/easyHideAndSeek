@@ -1,6 +1,7 @@
 package com.hideandseek.listeners
 
 import com.hideandseek.disguise.DisguiseManager
+import com.hideandseek.items.TrackerInsightHandler
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.player.PlayerMoveEvent
@@ -19,7 +20,13 @@ class PlayerMoveListener(
     @EventHandler
     fun onPlayerMove(event: PlayerMoveEvent) {
         val player = event.player
+        val from = event.from
         val to = event.to ?: return
+
+        // Update movement time for TrackerInsight (only if actually moved position)
+        if (from.blockX != to.blockX || from.blockY != to.blockY || from.blockZ != to.blockZ) {
+            TrackerInsightHandler.updateMovementTime(player.uniqueId)
+        }
 
         if (!disguiseManager.isDisguised(player.uniqueId)) {
             return
