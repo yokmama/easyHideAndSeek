@@ -75,12 +75,12 @@ shop:
           material: BREAD
           display-name: "&6パン"
           slot: 10
-          price: 50
+          price: 0
           lore:
             - "&7空腹を満たす"
             - "&a満腹度を回復"
             - ""
-            - "&e価格: &650 coins"
+            - "&a無料"
           item-type: "EQUIPMENT"
           item-material: "BREAD"
           item-amount: 3
@@ -91,12 +91,12 @@ shop:
           material: GOLDEN_APPLE
           display-name: "&6金のリンゴ"
           slot: 11
-          price: 300
+          price: 100
           lore:
             - "&7体力と満腹度を大幅に回復"
             - "&a+吸収ハート"
             - ""
-            - "&e価格: &6300 coins"
+            - "&e価格: &6100 coins"
           item-type: "EQUIPMENT"
           item-material: "GOLDEN_APPLE"
           item-amount: 1
