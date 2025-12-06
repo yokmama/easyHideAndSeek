@@ -13,6 +13,8 @@ import org.bukkit.event.Listener
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.plugin.Plugin
+import org.bukkit.potion.PotionEffect
+import org.bukkit.potion.PotionEffectType
 
 /**
  * Listener for player death events during gameplay
@@ -298,6 +300,22 @@ class PlayerDeathListener(
             // Restore shop item after respawn
             gameManager.giveShopItemToPlayer(player)
             plugin.logger.info("[ShopItem] Restored shop item for ${player.name} after respawn")
+
+            // Restore Seeker vision restriction (DARKNESS effect) after respawn
+            val playerData = game.players[player.uniqueId]
+            if (playerData?.role == PlayerRole.SEEKER) {
+                player.addPotionEffect(
+                    PotionEffect(
+                        PotionEffectType.DARKNESS,
+                        Int.MAX_VALUE, // Permanent duration
+                        0, // Level 0 for moderate darkness
+                        false,
+                        false,
+                        false
+                    )
+                )
+                plugin.logger.info("[SeekerEffect] Restored DARKNESS effect for ${player.name} after respawn")
+            }
         }, 1L)
     }
 }
