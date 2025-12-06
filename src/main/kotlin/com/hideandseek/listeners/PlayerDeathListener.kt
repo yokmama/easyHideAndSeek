@@ -197,16 +197,20 @@ class PlayerDeathListener(
             })
 
         } else {
-            // Killer is STRONGER or EQUAL: Victim is defeated
-            plugin.logger.info("[SeekerPK] ${killer.name} is stronger/equal - ${victim.name} is defeated")
+            // Killer is STRONGER or EQUAL: Victim is defeated but stays as Seeker
+            plugin.logger.info("[SeekerPK] ${killer.name} is stronger/equal - ${victim.name} is defeated but stays as SEEKER")
 
-            // Respawn victim and convert to spectator
+            // Respawn victim as Seeker (no role change)
             Bukkit.getScheduler().runTask(plugin, Runnable {
                 victim.spigot().respawn()
                 victim.health = victim.maxHealth
                 victim.fireTicks = 0
                 victim.fallDistance = 0.0f
                 victim.foodLevel = 20
+
+                // Teleport to random spawn location
+                val spawnLocation = gameManager.getRandomSpawnLocation(game.arena)
+                victim.teleport(spawnLocation)
 
                 // Notify both players
                 MessageUtil.send(killer, "&a${victim.name} を倒しました！ &7(あなたの方が強い)")
@@ -225,18 +229,16 @@ class PlayerDeathListener(
                 killer.playSound(killer.location, org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f)
                 victim.playSound(victim.location, org.bukkit.Sound.ENTITY_VILLAGER_HURT, 1.0f, 0.8f)
 
-                // Convert victim to spectator
-                victimData.role = PlayerRole.SPECTATOR
-                victimData.isCaptured = true
-
-                // Reset victim's strength
+                // Victim stays as Seeker - no role change
+                // Reset victim's strength as penalty for losing
                 strengthManager.resetStrength(victim.uniqueId)
+                MessageUtil.send(victim, "&e強さポイントがリセットされました")
 
-                // Update victim to spectator mode using SpectatorManager
-                val spectatorManager = (plugin as? com.hideandseek.HideAndSeekPlugin)?.spectatorManager
-                spectatorManager?.applySpectatorMode(victim)
+                // Restore scoreboard
+                val localizedScoreboard = (plugin as? com.hideandseek.HideAndSeekPlugin)?.localizedScoreboard
+                localizedScoreboard?.addPlayer(victim, game)
 
-                plugin.logger.info("[SeekerPK] ${victim.name} converted to SPECTATOR after being defeated by ${killer.name}")
+                plugin.logger.info("[SeekerPK] ${victim.name} respawned as SEEKER after being defeated by ${killer.name}")
             })
         }
     }
