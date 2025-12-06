@@ -289,8 +289,10 @@ class PlayerDeathListener(
 
         // Restore scoreboard and shop item after respawn (delay to ensure player is fully loaded)
         Bukkit.getScheduler().runTaskLater(plugin, Runnable {
-            val gameScoreboard = (plugin as? com.hideandseek.HideAndSeekPlugin)?.gameScoreboard
-            gameScoreboard?.addPlayer(player, game)
+            // Use localizedScoreboard (main scoreboard manager with update task)
+            // instead of gameScoreboard to ensure player is included in the update loop
+            val localizedScoreboard = (plugin as? com.hideandseek.HideAndSeekPlugin)?.localizedScoreboard
+            localizedScoreboard?.addPlayer(player, game)
             plugin.logger.info("[Scoreboard] Restored scoreboard for ${player.name} after respawn")
 
             // Restore shop item after respawn
